@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../core/theme/morfin_theme.dart';
+import '../models/morfin_models.dart';
 import '../state/morfin_controller.dart';
+import '../widgets/add_sheets.dart';
 import '../widgets/neo_flat_art.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -23,6 +26,8 @@ class HomeScreen extends StatelessWidget {
     final balanceText = hide ? 'Rp •••••••••' : formatIdr(summary?.totalBalance ?? 0);
     final budgetRem = hide ? 'Rp •••' : formatIdrCompact(summary?.budgetRemaining ?? 0);
     final days = summary?.weeklyDays ?? [];
+    final cashflowBars = summary?.weeklyCashflowBars ?? [];
+    final monthLabel = DateFormat('MMM yyyy').format(DateTime.now());
 
     return RefreshIndicator(
       color: MorfinColors.carbon,
@@ -31,40 +36,50 @@ class HomeScreen extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
         children: [
-          // Top User Row
+          // Top User Row (tap to open Profile & Export/Reset Sheet)
           Row(
             children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(colors: [Color(0xFF22D3EE), Color(0xFF6366F1)]),
-                  border: Border.all(color: Colors.white, width: 2.2),
-                ),
-                child: Center(
-                  child: Text(
-                    (user?.name.isNotEmpty == true ? user!.name[0] : 'M').toUpperCase(),
-                    style: MorfinTheme.display(18, color: Colors.white),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.name ?? 'Pengguna MorFin',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: MorfinTheme.display(17),
-                    ),
-                    Text(
-                      'Keuangan Sehat · ${user?.authProvider == 'google' ? 'Google OAuth' : 'Email Sync'}',
-                      style: MorfinTheme.body(11.5, color: MorfinColors.muted, weight: FontWeight.w600),
-                    ),
-                  ],
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => showProfileSheet(context, controller),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(colors: [Color(0xFF22D3EE), Color(0xFF6366F1)]),
+                          border: Border.all(color: Colors.white, width: 2.2),
+                        ),
+                        child: Center(
+                          child: Text(
+                            (user?.name.isNotEmpty == true ? user!.name[0] : 'M').toUpperCase(),
+                            style: MorfinTheme.display(18, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.name ?? 'Pengguna MorFin',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: MorfinTheme.display(17),
+                            ),
+                            Text(
+                              'Keuangan Sehat · $monthLabel',
+                              style: MorfinTheme.body(11.5, color: MorfinColors.muted, weight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Container(
@@ -81,11 +96,16 @@ class HomeScreen extends StatelessWidget {
                   style: MorfinTheme.display(12, color: MorfinColors.ink),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               IconButton(
-                tooltip: 'Keluar Akun',
-                onPressed: controller.logout,
-                icon: const Icon(Icons.logout_rounded, size: 20, color: MorfinColors.muted),
+                tooltip: 'Catat Cepat',
+                onPressed: () => showAddTransactionSheet(context, controller),
+                icon: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(color: MorfinColors.carbon, shape: BoxShape.circle),
+                  child: const Icon(Icons.add_rounded, size: 18, color: MorfinColors.lime),
+                ),
               ),
             ],
           ),
@@ -96,7 +116,7 @@ class HomeScreen extends StatelessWidget {
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: MorfinColors.carbon,
                   borderRadius: BorderRadius.circular(24),
@@ -113,51 +133,61 @@ class HomeScreen extends StatelessWidget {
                         final isDone = d.status == 'done';
                         final isToday = d.status == 'today';
                         return Expanded(
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                            padding: const EdgeInsets.symmetric(vertical: 7),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                          child: GestureDetector(
+                            onTap: () => showMorfinToast(
+                              context,
+                              isDone
+                                  ? '${d.label}: Pengeluaran dalam batas aman'
+                                  : isToday
+                                      ? '${d.label} (Hari ini): Pantau anggaran harianmu'
+                                      : '${d.label}: Belum dimulai',
                             ),
-                            child: Column(
-                              children: [
-                                Container(
-                                  width: 22,
-                                  height: 22,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isDone
-                                        ? MorfinColors.lime
-                                        : isToday
-                                            ? Colors.transparent
-                                            : const Color(0xFFE3E8DF),
-                                    border: isToday ? Border.all(color: MorfinColors.carbon, width: 2) : null,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                              padding: const EdgeInsets.symmetric(vertical: 7),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: isDone
+                                          ? MorfinColors.lime
+                                          : isToday
+                                              ? Colors.transparent
+                                              : const Color(0xFFE3E8DF),
+                                      border: isToday ? Border.all(color: MorfinColors.carbon, width: 2) : null,
+                                    ),
+                                    child: Center(
+                                      child: isToday
+                                          ? Container(
+                                              width: 6,
+                                              height: 6,
+                                              decoration: const BoxDecoration(color: MorfinColors.carbon, shape: BoxShape.circle),
+                                            )
+                                          : Icon(
+                                              Icons.check_rounded,
+                                              size: 13,
+                                              color: isDone ? Colors.white : MorfinColors.mutedLight,
+                                            ),
+                                    ),
                                   ),
-                                  child: Center(
-                                    child: isToday
-                                        ? Container(
-                                            width: 6,
-                                            height: 6,
-                                            decoration: const BoxDecoration(color: MorfinColors.carbon, shape: BoxShape.circle),
-                                          )
-                                        : Icon(
-                                            Icons.check_rounded,
-                                            size: 13,
-                                            color: isDone ? Colors.white : MorfinColors.mutedLight,
-                                          ),
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    d.label,
+                                    style: MorfinTheme.body(
+                                      9.5,
+                                      color: isDone || isToday ? MorfinColors.ink : MorfinColors.mutedLight,
+                                      weight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  d.label,
-                                  style: MorfinTheme.body(
-                                    9.5,
-                                    color: isDone || isToday ? MorfinColors.ink : MorfinColors.mutedLight,
-                                    weight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -166,7 +196,6 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              // Top-right organic notch cutout with privacy toggle switch
               Positioned(
                 top: 0,
                 right: 0,
@@ -264,7 +293,7 @@ class HomeScreen extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Text('${summary?.budgetHealthPercent ?? 72}%', style: MorfinTheme.display(16, color: MorfinColors.lime)),
+                                  Text('${summary?.budgetHealthPercent ?? 100}%', style: MorfinTheme.display(16, color: MorfinColors.lime)),
                                   Text('Terkendali', style: MorfinTheme.body(9.5, color: MorfinColors.mutedLight)),
                                 ],
                               ),
@@ -313,51 +342,57 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // Bottom White Cashflow Board (Gantt style matching reference Task Board)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Arus Kas Mingguan', style: MorfinTheme.display(15)),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            _legendDot(MorfinColors.lime, 'Pemasukan'),
-                            const SizedBox(width: 12),
-                            _legendDot(MorfinColors.carbon, 'Pengeluaran'),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: MorfinColors.carbon,
-                        borderRadius: BorderRadius.circular(999),
+          // Live Cashflow Board (driven by actual transactions!)
+          GestureDetector(
+            onTap: () => onNavigateTab(2),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Arus Kas Terbaru', style: MorfinTheme.display(15)),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              _legendDot(MorfinColors.lime, 'Pemasukan'),
+                              const SizedBox(width: 12),
+                              _legendDot(MorfinColors.carbon, 'Pengeluaran'),
+                            ],
+                          ),
+                        ],
                       ),
-                      child: Text('Today', style: MorfinTheme.body(10.5, color: Colors.white, weight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _ganttBar(leftFrac: 0.02, widthFrac: 0.36, isLime: true),
-                _ganttBar(leftFrac: 0.14, widthFrac: 0.44, isLime: true),
-                _ganttBar(leftFrac: 0.24, widthFrac: 0.54, isLime: false),
-                _ganttBar(leftFrac: 0.06, widthFrac: 0.66, isLime: true),
-                _ganttBar(leftFrac: 0.34, widthFrac: 0.56, isLime: false),
-                _ganttBar(leftFrac: 0.10, widthFrac: 0.80, isLime: true),
-              ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: MorfinColors.carbon,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(DateFormat('dd MMM').format(DateTime.now()), style: MorfinTheme.body(10.5, color: Colors.white, weight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  if (cashflowBars.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      child: Center(
+                        child: Text('Belum ada arus kas. Tekan + untuk mulai mencatat.', style: MorfinTheme.body(12, color: MorfinColors.muted)),
+                      ),
+                    )
+                  else
+                    ...cashflowBars.map((bar) => _ganttBar(context, bar, hide)),
+                ],
+              ),
             ),
           ),
         ],
@@ -374,29 +409,39 @@ class HomeScreen extends StatelessWidget {
         ],
       );
 
-  Widget _ganttBar({required double leftFrac, required double widthFrac, required bool isLime}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final w = constraints.maxWidth;
-          return Stack(
-            children: [
-              Container(height: 12, decoration: BoxDecoration(color: MorfinColors.pistachio, borderRadius: BorderRadius.circular(6))),
-              Positioned(
-                left: w * leftFrac,
-                child: Container(
-                  width: w * widthFrac,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: isLime ? MorfinColors.lime : MorfinColors.carbon,
-                    borderRadius: BorderRadius.circular(6),
+  Widget _ganttBar(BuildContext context, CashflowBarItem bar, bool hide) {
+    return GestureDetector(
+      onTap: () {
+        if (bar.amount > 0) {
+          showMorfinToast(
+            context,
+            '${bar.label}: ${bar.isIncome ? '+' : '-'}${hide ? 'Rp •••' : formatIdr(bar.amount)}',
+          );
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final w = constraints.maxWidth;
+            return Stack(
+              children: [
+                Container(height: 12, decoration: BoxDecoration(color: MorfinColors.pistachio, borderRadius: BorderRadius.circular(6))),
+                Positioned(
+                  left: w * bar.leftFrac,
+                  child: Container(
+                    width: w * bar.widthFrac,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: bar.isIncome ? MorfinColors.lime : MorfinColors.carbon,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

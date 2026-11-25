@@ -28,26 +28,16 @@ class GoalsScreen extends StatelessWidget {
           Center(child: Text('Target', style: MorfinTheme.display(18, color: Colors.white))),
           const SizedBox(height: 18),
 
-          // 3 Organic Matcha-Lime Stat Blocks + Floating Notch Arrow
           Stack(
             clipBehavior: Clip.none,
             children: [
               Row(
                 children: [
-                  Expanded(
-                    flex: 9,
-                    child: _statBox('${summary?.completedGoals ?? 0}', 'Tercapai', false),
-                  ),
+                  Expanded(flex: 9, child: _statBox('${summary?.completedGoals ?? 0}', 'Tercapai', false)),
                   const SizedBox(width: 8),
-                  Expanded(
-                    flex: 12,
-                    child: _statBox('${summary?.activeGoals ?? 0}', 'Berjalan', true),
-                  ),
+                  Expanded(flex: 12, child: _statBox('${summary?.activeGoals ?? 0}', 'Berjalan', true)),
                   const SizedBox(width: 8),
-                  Expanded(
-                    flex: 9,
-                    child: _statBox('${summary?.pausedGoals ?? 0}', 'Tertunda', false),
-                  ),
+                  Expanded(flex: 9, child: _statBox('${summary?.pausedGoals ?? 0}', 'Tertunda', false)),
                 ],
               ),
               Positioned(
@@ -71,34 +61,40 @@ class GoalsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 26),
 
-          // 3x2 Grid of Hexagonal Financial Milestone Badges
           Expanded(
-            child: GridView.builder(
-              itemCount: goals.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 18,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.82,
-              ),
-              itemBuilder: (_, idx) {
-                final g = goals[idx];
-                return HexagonBadge(
-                  iconKey: g.icon,
-                  unlocked: g.isUnlocked,
-                  label: g.title,
-                  onTap: () => controller.cycleGoalStatus(g),
-                );
-              },
-            ),
+            child: goals.isEmpty
+                ? Center(
+                    child: Text(
+                      'Belum ada target keuangan.\nTekan tombol + di bawah untuk membuat target pertama.',
+                      textAlign: TextAlign.center,
+                      style: MorfinTheme.body(13, color: MorfinColors.mutedLight),
+                    ),
+                  )
+                : GridView.builder(
+                    itemCount: goals.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 18,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 0.82,
+                    ),
+                    itemBuilder: (_, idx) {
+                      final g = goals[idx];
+                      return HexagonBadge(
+                        iconKey: g.icon,
+                        unlocked: g.isUnlocked,
+                        label: g.title,
+                        onTap: () => showGoalDetailSheet(context, controller, g),
+                      );
+                    },
+                  ),
           ),
           Text(
-            'Ketuk lencana untuk ubah status (Tercapai / Berjalan / Tertunda)',
+            'Ketuk lencana untuk tambah tabungan atau ubah status target',
             style: MorfinTheme.body(10.5, color: MorfinColors.mutedLight),
           ),
           const SizedBox(height: 12),
 
-          // Full-Width Matcha-Lime + CTA Button
           SizedBox(
             width: double.infinity,
             height: 48,

@@ -191,12 +191,24 @@ class MorfinController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateProfileName(String name) async {
+    user = await api.updatePreferences(name: name);
+    notifyListeners();
+  }
+
+  Future<void> resetAccountData() async {
+    await api.resetAccountData();
+    await refreshDashboard();
+  }
+
   Future<void> addTransaction({
     required String title,
     required String category,
     required String type,
     required int amount,
     required String paymentMethod,
+    String? walletId,
+    DateTime? occurredAt,
   }) async {
     await api.createTransaction(
       title: title,
@@ -204,6 +216,29 @@ class MorfinController extends ChangeNotifier {
       type: type,
       amount: amount,
       paymentMethod: paymentMethod,
+      walletId: walletId,
+      occurredAt: occurredAt,
+    );
+    await refreshDashboard();
+  }
+
+  Future<void> editTransaction(
+    String id, {
+    required String title,
+    required String category,
+    required String type,
+    required int amount,
+    required String paymentMethod,
+    required bool verified,
+  }) async {
+    await api.updateTransaction(
+      id,
+      title: title,
+      category: category,
+      type: type,
+      amount: amount,
+      paymentMethod: paymentMethod,
+      verified: verified,
     );
     await refreshDashboard();
   }
@@ -233,8 +268,52 @@ class MorfinController extends ChangeNotifier {
     await refreshDashboard();
   }
 
+  Future<void> editBudget(
+    String id, {
+    required String name,
+    required String category,
+    required String period,
+    required int limitAmount,
+  }) async {
+    await api.updateBudget(
+      id,
+      name: name,
+      category: category,
+      period: period,
+      limitAmount: limitAmount,
+    );
+    await refreshDashboard();
+  }
+
+  Future<void> deleteBudget(String id) async {
+    await api.deleteBudget(id);
+    await refreshDashboard();
+  }
+
+  Future<void> addWallet({
+    required String name,
+    required String icon,
+    required String colorVariant,
+    required int currentAmount,
+    required int targetAmount,
+  }) async {
+    await api.createWallet(
+      name: name,
+      icon: icon,
+      colorVariant: colorVariant,
+      currentAmount: currentAmount,
+      targetAmount: targetAmount,
+    );
+    await refreshDashboard();
+  }
+
   Future<void> topUpWallet(MorfinWallet wallet, int delta) async {
     await api.updateWalletBalance(wallet.id, (wallet.currentAmount + delta).clamp(0, 999999999));
+    await refreshDashboard();
+  }
+
+  Future<void> deleteWallet(String id) async {
+    await api.deleteWallet(id);
     await refreshDashboard();
   }
 
@@ -250,6 +329,28 @@ class MorfinController extends ChangeNotifier {
       targetAmount: targetAmount,
       savedAmount: savedAmount,
     );
+    await refreshDashboard();
+  }
+
+  Future<void> updateGoalDetails(
+    MorfinGoal goal, {
+    String? title,
+    String? status,
+    int? savedAmount,
+    int? targetAmount,
+  }) async {
+    await api.updateGoal(
+      goal.id,
+      title: title,
+      status: status,
+      savedAmount: savedAmount,
+      targetAmount: targetAmount,
+    );
+    await refreshDashboard();
+  }
+
+  Future<void> deleteGoal(String id) async {
+    await api.deleteGoal(id);
     await refreshDashboard();
   }
 

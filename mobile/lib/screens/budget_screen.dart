@@ -22,7 +22,7 @@ class BudgetScreen extends StatelessWidget {
     final items = allBudgets.where((b) => b.period == period).toList();
     final totalLimit = items.fold<int>(0, (s, b) => s + b.limitAmount);
     final totalSpent = items.fold<int>(0, (s, b) => s + b.spentAmount);
-    final savedPct = totalLimit > 0 ? (((totalLimit - totalSpent) / totalLimit) * 100).clamp(0, 100).round() : 28;
+    final savedPct = totalLimit > 0 ? (((totalLimit - totalSpent) / totalLimit) * 100).clamp(0, 100).round() : 100;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
@@ -62,7 +62,7 @@ class BudgetScreen extends StatelessWidget {
           ),
           const SizedBox(height: 18),
 
-          // Hero Dark Trophy Card ("Keep It Up!")
+          // Hero Dark Trophy Card
           Container(
             height: 146,
             width: double.infinity,
@@ -86,7 +86,7 @@ class BudgetScreen extends StatelessWidget {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Keep It Up!', style: MorfinTheme.display(20, color: Colors.white)),
+                              Text(savedPct >= 20 ? 'Keep It Up!' : 'Hati-Hati!', style: MorfinTheme.display(20, color: Colors.white)),
                               const SizedBox(height: 5),
                               SizedBox(
                                 width: 170,
@@ -128,7 +128,7 @@ class BudgetScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Alternating Matcha-Lime Budget Cards
+          // Alternating Matcha-Lime Budget Cards (tap to Edit / Delete)
           Expanded(
             child: items.isEmpty
                 ? Center(
@@ -144,9 +144,10 @@ class BudgetScreen extends StatelessWidget {
                     itemBuilder: (_, idx) {
                       final b = items[idx];
                       final tagOnLeft = idx.isOdd;
+                      final over = b.spentAmount > b.limitAmount;
                       final inner = Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF6FAEF),
                             borderRadius: BorderRadius.circular(14),
@@ -158,7 +159,21 @@ class BudgetScreen extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 'Terpakai ${b.usedPercent}% · ${formatIdrCompact(b.spentAmount)}',
-                                style: MorfinTheme.body(10.5, color: MorfinColors.muted, weight: FontWeight.w600),
+                                style: MorfinTheme.body(
+                                  10.5,
+                                  color: over ? MorfinColors.coral : MorfinColors.muted,
+                                  weight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(99),
+                                child: LinearProgressIndicator(
+                                  minHeight: 5,
+                                  value: (b.usedPercent / 100.0).clamp(0.0, 1.0),
+                                  backgroundColor: MorfinColors.ink.withValues(alpha: 0.08),
+                                  color: over ? MorfinColors.coral : MorfinColors.carbon,
+                                ),
                               ),
                             ],
                           ),
@@ -175,16 +190,19 @@ class BudgetScreen extends StatelessWidget {
                           style: MorfinTheme.display(12, color: Colors.white),
                         ),
                       );
-                      return Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: MorfinColors.lime,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: tagOnLeft
-                              ? [tag, const SizedBox(width: 8), inner]
-                              : [inner, const SizedBox(width: 8), tag],
+                      return GestureDetector(
+                        onTap: () => showAddBudgetSheet(context, controller, existing: b),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: MorfinColors.lime,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: tagOnLeft
+                                ? [tag, const SizedBox(width: 8), inner]
+                                : [inner, const SizedBox(width: 8), tag],
+                          ),
                         ),
                       );
                     },

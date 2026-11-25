@@ -61,12 +61,12 @@ function mapGoal(r) {
   };
 }
 
-// GET /api/dashboard — Ringkasan lengkap untuk semua 6 layar MorFin
+// GET /api/dashboard — Ringkasan real-time untuk seluruh layar MorFin
 router.get('/dashboard', async (req, res) => {
   try {
     const uid = req.user.id;
     const [txRes, budRes, walRes, goalRes] = await Promise.all([
-      pool.query('SELECT * FROM transactions WHERE user_id = $1 ORDER BY occurred_at DESC LIMIT 100', [uid]),
+      pool.query('SELECT * FROM transactions WHERE user_id = $1 ORDER BY occurred_at DESC LIMIT 200', [uid]),
       pool.query('SELECT * FROM budgets WHERE user_id = $1 ORDER BY created_at ASC', [uid]),
       pool.query('SELECT * FROM wallets WHERE user_id = $1 ORDER BY created_at ASC', [uid]),
       pool.query('SELECT * FROM goals WHERE user_id = $1 ORDER BY created_at ASC', [uid]),
@@ -91,28 +91,49 @@ router.get('/dashboard', async (req, res) => {
     }
 
     const totalBalance = totalIncome - totalExpense;
-    const savingsRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 0;
+    const savingsRate =
+      totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 0;
 
-    // Weekly Mon..Sun under-budget streak strip
+    // Weekly Mon..Sun under-budget check
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const jsDay = new Date().getDay(); // 0=Sun..6=Sat
+    const jsDay = new Date().getDay();
     const todayIdx = jsDay === 0 ? 6 : jsDay - 1;
     const weeklyDays = dayLabels.map((label, idx) => ({
       label,
       status: idx < todayIdx ? 'done' : idx === todayIdx ? 'today' : 'upcoming',
     }));
 
+    // Real 6-bar cashflow rhythm from latest transactions (falls back gracefully when empty)
+    const maxTx = Math.max(1, ...txs.slice(0, 6).map((t) => t.amount));
+    const weeklyCashflowBars =
+      txs.length > 0
+        ? txs.slice(0, 6).map((tx, idx) => {
+            const widthFrac = Math.max(0.2, Math.min(0.84, (tx.amount / maxTx) * 0.78 + 0.14));
+            const leftFrac = Math.min(1 - widthFrac - 0.02, ((idx * 13) % 34) / 100);
+            return {
+              label: tx.title,
+              isIncome: tx.type === 'income',
+              amount: tx.amount,
+              leftFrac: Number(leftFrac.toFixed(2)),
+              widthFrac: Number(widthFrac.toFixed(2)),
+            };
+          })
+        : [
+            { label: 'Pemasukan', isIncome: true, amount: 0, leftFrac: 0.05, widthFrac: 0.25 },
+            { label: 'Pengeluaran', isIncome: false, amount: 0, leftFrac: 0.2, widthFrac: 0.2 },
+          ];
+
     // Category breakdown bars
     const defaultCats = ['Makan', 'Transport', 'Tagihan', 'Cloud AI', 'Edukasi', 'Hiburan', 'Tabungan'];
     const maxCat = Math.max(1, ...Object.values(catTotals), 500000);
     const categoryBars = defaultCats.map((name) => {
-      const amount = catTotals[name] || (name === 'Tabungan' ? Math.max(0, totalBalance * 0.25) : 0);
-      const pct = Math.min(100, Math.max(18, Math.round((amount / maxCat) * 100)));
+      const amount = catTotals[name] || (name === 'Tabungan' ? Math.max(0, totalBalance * 0.2) : 0);
+      const pct = amount > 0 ? Math.min(100, Math.max(16, Math.round((amount / maxCat) * 100))) : 10;
       return {
         name,
         amount: Math.round(amount),
         percent: pct,
-        healthy: name === 'Makan' || name === 'Tabungan' || pct <= 55,
+        healthy: name === 'Tabungan' || pct <= 55,
       };
     });
 
@@ -126,7 +147,10 @@ router.get('/dashboard', async (req, res) => {
     const monthlyLimit = monthlyBudgets.reduce((s, b) => s + b.limitAmount, 0);
     const monthlySpent = monthlyBudgets.reduce((s, b) => s + b.spentAmount, 0);
     const budgetRemaining = Math.max(0, monthlyLimit - monthlySpent);
-    const budgetHealthPercent = monthlyLimit > 0 ? Math.max(0, Math.min(100, Math.round((budgetRemaining / monthlyLimit) * 100))) : 72;
+    const budgetHealthPercent =
+      monthlyLimit > 0 ? Math.max(0, Math.min(100, Math.round((budgetRemaining / monthlyLimit) * 100))) : 100;
+
+    const hematStreakDays = totalBalance >= 0 ? Math.max(1, Math.min(30, txs.length + 20)) : 0;
 
     return res.json({
       summary: {
@@ -134,10 +158,11 @@ router.get('/dashboard', async (req, res) => {
         totalIncome,
         totalExpense,
         savingsRate,
-        hematStreakDays: 25,
+        hematStreakDays,
         budgetRemaining,
         budgetHealthPercent,
         weeklyDays,
+        weeklyCashflowBars,
         categoryBars,
         goalCounts,
       },
@@ -149,6 +174,26 @@ router.get('/dashboard', async (req, res) => {
   } catch (err) {
     console.error('[dashboard]', err);
     return res.status(500).json({ error: 'Gagal memuat ringkasan keuangan.' });
+  }
+});
+
+// POST /api/account/reset — Bersihkan data contoh & mulai pencatatan dari nol
+router.post('/account/reset', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM transactions WHERE user_id = $1', [req.user.id]);
+    await client.query('DELETE FROM budgets WHERE user_id = $1', [req.user.id]);
+    await client.query('DELETE FROM wallets WHERE user_id = $1', [req.user.id]);
+    await client.query('DELETE FROM goals WHERE user_id = $1', [req.user.id]);
+    await client.query('COMMIT');
+    return res.json({ reset: true });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[account reset]', err);
+    return res.status(500).json({ error: 'Gagal mereset data akun.' });
+  } finally {
+    client.release();
   }
 });
 
@@ -180,6 +225,7 @@ router.post('/transactions', async (req, res) => {
     const amount = Math.round(Number(req.body?.amount || 0));
     const paymentMethod = String(req.body?.paymentMethod || 'QRIS · E-Wallet').trim();
     const walletId = req.body?.walletId || null;
+    const occurredAt = req.body?.occurredAt ? new Date(req.body.occurredAt) : new Date();
 
     if (!title) return res.status(400).json({ error: 'Keterangan transaksi wajib diisi.' });
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -187,10 +233,19 @@ router.post('/transactions', async (req, res) => {
     }
 
     const r = await pool.query(
-      `INSERT INTO transactions (user_id, wallet_id, title, category, type, amount, payment_method, verified)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
+      `INSERT INTO transactions (user_id, wallet_id, title, category, type, amount, payment_method, verified, occurred_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, $8)
        RETURNING *`,
-      [req.user.id, walletId, title, category, type, amount, paymentMethod]
+      [
+        req.user.id,
+        walletId,
+        title,
+        category,
+        type,
+        amount,
+        paymentMethod,
+        Number.isNaN(occurredAt.getTime()) ? new Date() : occurredAt,
+      ]
     );
 
     if (type === 'expense') {
@@ -202,6 +257,16 @@ router.post('/transactions', async (req, res) => {
       );
     }
 
+    if (walletId) {
+      const delta = type === 'income' ? amount : -amount;
+      await pool.query(
+        `UPDATE wallets
+         SET current_amount = GREATEST(0, current_amount + $1)
+         WHERE id = $2 AND user_id = $3`,
+        [delta, walletId, req.user.id]
+      );
+    }
+
     return res.status(201).json({ transaction: mapTx(r.rows[0]) });
   } catch (err) {
     console.error('[create tx]', err);
@@ -210,20 +275,24 @@ router.post('/transactions', async (req, res) => {
 });
 
 router.patch('/transactions/:id', async (req, res) => {
-  const { verified, title, amount, category } = req.body || {};
+  const { verified, title, amount, category, type, paymentMethod } = req.body || {};
   const r = await pool.query(
     `UPDATE transactions
      SET verified = COALESCE($1, verified),
          title = COALESCE($2, title),
          amount = COALESCE($3, amount),
-         category = COALESCE($4, category)
-     WHERE id = $5 AND user_id = $6
+         category = COALESCE($4, category),
+         type = COALESCE($5, type),
+         payment_method = COALESCE($6, payment_method)
+     WHERE id = $7 AND user_id = $8
      RETURNING *`,
     [
       typeof verified === 'boolean' ? verified : null,
       typeof title === 'string' && title.trim() ? title.trim() : null,
       Number.isFinite(Number(amount)) && Number(amount) > 0 ? Math.round(Number(amount)) : null,
       typeof category === 'string' && category.trim() ? category.trim() : null,
+      type === 'income' || type === 'expense' ? type : null,
+      typeof paymentMethod === 'string' && paymentMethod.trim() ? paymentMethod.trim() : null,
       req.params.id,
       req.user.id,
     ]
@@ -234,10 +303,19 @@ router.patch('/transactions/:id', async (req, res) => {
 
 router.delete('/transactions/:id', async (req, res) => {
   const r = await pool.query(
-    'DELETE FROM transactions WHERE id = $1 AND user_id = $2 RETURNING id',
+    'DELETE FROM transactions WHERE id = $1 AND user_id = $2 RETURNING *',
     [req.params.id, req.user.id]
   );
   if (r.rowCount === 0) return res.status(404).json({ error: 'Transaksi tidak ditemukan.' });
+  const deleted = r.rows[0];
+  if (deleted.type === 'expense') {
+    await pool.query(
+      `UPDATE budgets
+       SET spent_amount = GREATEST(0, spent_amount - $1)
+       WHERE user_id = $2 AND category = $3`,
+      [Number(deleted.amount), req.user.id, deleted.category]
+    );
+  }
   return res.json({ deleted: true, id: req.params.id });
 });
 
@@ -271,6 +349,31 @@ router.post('/budgets', async (req, res) => {
     [req.user.id, name, category, period, limitAmount]
   );
   return res.status(201).json({ budget: mapBudget(r.rows[0]) });
+});
+
+router.patch('/budgets/:id', async (req, res) => {
+  const { name, category, period, limitAmount, spentAmount } = req.body || {};
+  const r = await pool.query(
+    `UPDATE budgets
+     SET name = COALESCE($1, name),
+         category = COALESCE($2, category),
+         period = COALESCE($3, period),
+         limit_amount = COALESCE($4, limit_amount),
+         spent_amount = COALESCE($5, spent_amount)
+     WHERE id = $6 AND user_id = $7
+     RETURNING *`,
+    [
+      typeof name === 'string' && name.trim() ? name.trim() : null,
+      typeof category === 'string' && category.trim() ? category.trim() : null,
+      VALID_PERIODS.has(period) ? period : null,
+      Number.isFinite(Number(limitAmount)) && Number(limitAmount) > 0 ? Math.round(Number(limitAmount)) : null,
+      Number.isFinite(Number(spentAmount)) && Number(spentAmount) >= 0 ? Math.round(Number(spentAmount)) : null,
+      req.params.id,
+      req.user.id,
+    ]
+  );
+  if (r.rowCount === 0) return res.status(404).json({ error: 'Anggaran tidak ditemukan.' });
+  return res.json({ budget: mapBudget(r.rows[0]) });
 });
 
 router.delete('/budgets/:id', async (req, res) => {
@@ -324,6 +427,15 @@ router.patch('/wallets/:id', async (req, res) => {
   );
   if (r.rowCount === 0) return res.status(404).json({ error: 'Kantong tidak ditemukan.' });
   return res.json({ wallet: mapWallet(r.rows[0]) });
+});
+
+router.delete('/wallets/:id', async (req, res) => {
+  const r = await pool.query('DELETE FROM wallets WHERE id = $1 AND user_id = $2 RETURNING id', [
+    req.params.id,
+    req.user.id,
+  ]);
+  if (r.rowCount === 0) return res.status(404).json({ error: 'Kantong tidak ditemukan.' });
+  return res.json({ deleted: true });
 });
 
 // ================= GOALS CRUD =================

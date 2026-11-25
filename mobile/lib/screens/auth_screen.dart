@@ -300,7 +300,7 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 18),
               Center(
                 child: Text(
-                  'Backend VPS: PostgreSQL 17 · JWT + OAuth 2.0',
+                  'Data keuangan Anda tersimpan aman dan tersinkron otomatis.',
                   style: MorfinTheme.body(11, color: MorfinColors.muted, weight: FontWeight.w600),
                 ),
               ),

@@ -119,12 +119,19 @@ class MorfinApi {
     return DashboardPayload.fromJson(_decode(res));
   }
 
+  Future<void> resetAccountData() async {
+    final res = await _client.post(Uri.parse('$baseUrl/api/account/reset'), headers: _headers());
+    _decode(res);
+  }
+
   Future<void> createTransaction({
     required String title,
     required String category,
     required String type,
     required int amount,
     required String paymentMethod,
+    String? walletId,
+    DateTime? occurredAt,
   }) async {
     final res = await _client.post(
       Uri.parse('$baseUrl/api/transactions'),
@@ -135,18 +142,39 @@ class MorfinApi {
         'type': type,
         'amount': amount,
         'paymentMethod': paymentMethod,
+        'walletId': ?walletId,
+        if (occurredAt != null) 'occurredAt': occurredAt.toUtc().toIso8601String(),
+      }),
+    );
+    _decode(res);
+  }
+
+  Future<void> updateTransaction(
+    String id, {
+    String? title,
+    String? category,
+    String? type,
+    int? amount,
+    String? paymentMethod,
+    bool? verified,
+  }) async {
+    final res = await _client.patch(
+      Uri.parse('$baseUrl/api/transactions/$id'),
+      headers: _headers(),
+      body: jsonEncode({
+        'title': ?title,
+        'category': ?category,
+        'type': ?type,
+        'amount': ?amount,
+        'paymentMethod': ?paymentMethod,
+        'verified': ?verified,
       }),
     );
     _decode(res);
   }
 
   Future<void> toggleTransactionVerified(String id, bool verified) async {
-    final res = await _client.patch(
-      Uri.parse('$baseUrl/api/transactions/$id'),
-      headers: _headers(),
-      body: jsonEncode({'verified': verified}),
-    );
-    _decode(res);
+    await updateTransaction(id, verified: verified);
   }
 
   Future<void> deleteTransaction(String id) async {
@@ -173,12 +201,69 @@ class MorfinApi {
     _decode(res);
   }
 
-  Future<void> updateWalletBalance(String id, int currentAmount) async {
+  Future<void> updateBudget(
+    String id, {
+    String? name,
+    String? category,
+    String? period,
+    int? limitAmount,
+    int? spentAmount,
+  }) async {
+    final res = await _client.patch(
+      Uri.parse('$baseUrl/api/budgets/$id'),
+      headers: _headers(),
+      body: jsonEncode({
+        'name': ?name,
+        'category': ?category,
+        'period': ?period,
+        'limitAmount': ?limitAmount,
+        'spentAmount': ?spentAmount,
+      }),
+    );
+    _decode(res);
+  }
+
+  Future<void> deleteBudget(String id) async {
+    final res = await _client.delete(Uri.parse('$baseUrl/api/budgets/$id'), headers: _headers());
+    _decode(res);
+  }
+
+  Future<void> createWallet({
+    required String name,
+    required String icon,
+    required String colorVariant,
+    required int currentAmount,
+    required int targetAmount,
+  }) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/api/wallets'),
+      headers: _headers(),
+      body: jsonEncode({
+        'name': name,
+        'icon': icon,
+        'colorVariant': colorVariant,
+        'currentAmount': currentAmount,
+        'targetAmount': targetAmount,
+      }),
+    );
+    _decode(res);
+  }
+
+  Future<void> updateWalletBalance(String id, int currentAmount, {int? targetAmount, String? name}) async {
     final res = await _client.patch(
       Uri.parse('$baseUrl/api/wallets/$id'),
       headers: _headers(),
-      body: jsonEncode({'currentAmount': currentAmount}),
+      body: jsonEncode({
+        'currentAmount': currentAmount,
+        'targetAmount': ?targetAmount,
+        'name': ?name,
+      }),
     );
+    _decode(res);
+  }
+
+  Future<void> deleteWallet(String id) async {
+    final res = await _client.delete(Uri.parse('$baseUrl/api/wallets/$id'), headers: _headers());
     _decode(res);
   }
 
@@ -202,12 +287,32 @@ class MorfinApi {
     _decode(res);
   }
 
-  Future<void> updateGoalStatus(String id, String status) async {
+  Future<void> updateGoal(
+    String id, {
+    String? title,
+    String? status,
+    int? savedAmount,
+    int? targetAmount,
+  }) async {
     final res = await _client.patch(
       Uri.parse('$baseUrl/api/goals/$id'),
       headers: _headers(),
-      body: jsonEncode({'status': status}),
+      body: jsonEncode({
+        'title': ?title,
+        'status': ?status,
+        'savedAmount': ?savedAmount,
+        'targetAmount': ?targetAmount,
+      }),
     );
+    _decode(res);
+  }
+
+  Future<void> updateGoalStatus(String id, String status) async {
+    await updateGoal(id, status: status);
+  }
+
+  Future<void> deleteGoal(String id) async {
+    final res = await _client.delete(Uri.parse('$baseUrl/api/goals/$id'), headers: _headers());
     _decode(res);
   }
 }

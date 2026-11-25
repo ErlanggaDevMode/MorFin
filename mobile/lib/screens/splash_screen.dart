@@ -60,7 +60,7 @@ class SplashScreen extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
                     child: Text(
-                      'Kelola arus kas, anggaran harian, dan target tabungan Anda bersama MorFin · Tersinkron aman di VPS.',
+                      'Kelola arus kas, anggaran harian, dan target tabungan Anda dengan ringan dan terukur.',
                       textAlign: TextAlign.center,
                       style: MorfinTheme.body(11, color: MorfinColors.mutedLight),
                     ),

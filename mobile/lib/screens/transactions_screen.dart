@@ -17,6 +17,8 @@ class TransactionsScreen extends StatefulWidget {
 class _TransactionsScreenState extends State<TransactionsScreen> {
   late int subTab;
   int? frontWalletIdx;
+  String _search = '';
+  String _typeFilter = 'all'; // all | income | expense
 
   @override
   void initState() {
@@ -33,7 +35,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         children: [
           Center(child: Text('Transaksi', style: MorfinTheme.display(18))),
           const SizedBox(height: 14),
-          // Segmented Pill Switcher: Harian | Kategori
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -47,7 +48,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Expanded(
             child: subTab == 0
                 ? _buildDailyTimeline(context, dash?.transactions ?? [])
@@ -80,13 +81,63 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  Widget _buildDailyTimeline(BuildContext context, List<MorfinTransaction> txs) {
-    final timeFmt = DateFormat('hh:mm a');
+  Widget _buildDailyTimeline(BuildContext context, List<MorfinTransaction> allTxs) {
+    final q = _search.trim().toLowerCase();
+    final txs = allTxs.where((t) {
+      if (_typeFilter != 'all' && t.type != _typeFilter) return false;
+      if (q.isNotEmpty) {
+        return t.title.toLowerCase().contains(q) ||
+            t.category.toLowerCase().contains(q) ||
+            t.paymentMethod.toLowerCase().contains(q);
+      }
+      return true;
+    }).toList();
+
+    final timeFmt = DateFormat('dd MMM · HH:mm');
     return Column(
       children: [
+        // Compact Search & Filter Row
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                onChanged: (v) => setState(() => _search = v),
+                style: MorfinTheme.body(12.5),
+                decoration: InputDecoration(
+                  hintText: 'Cari transaksi...',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 18, color: MorfinColors.muted),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _filterPill('Semua', 'all'),
+            const SizedBox(width: 4),
+            _filterPill('+', 'income'),
+            const SizedBox(width: 4),
+            _filterPill('-', 'expense'),
+          ],
+        ),
+        const SizedBox(height: 12),
+
         Expanded(
           child: txs.isEmpty
-              ? Center(child: Text('Belum ada transaksi.', style: MorfinTheme.body(13, color: MorfinColors.muted)))
+              ? Center(
+                  child: Text(
+                    allTxs.isEmpty
+                        ? 'Belum ada transaksi.\nTekan tombol + di bawah untuk mencatat.'
+                        : 'Tidak ada transaksi yang cocok dengan pencarian.',
+                    textAlign: TextAlign.center,
+                    style: MorfinTheme.body(13, color: MorfinColors.muted),
+                  ),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.only(bottom: 12),
                   itemCount: txs.length + 1,
@@ -95,8 +146,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(left: 20, top: 8, bottom: 8),
                         child: Text(
-                          'Arus Kas Hari Ini Terkendali!',
-                          style: MorfinTheme.body(11.5, color: MorfinColors.muted, weight: FontWeight.w700),
+                          'Ketuk kartu untuk edit · Geser kiri untuk hapus',
+                          style: MorfinTheme.body(11, color: MorfinColors.muted, weight: FontWeight.w600),
                         ),
                       );
                     }
@@ -104,7 +155,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     return Dismissible(
                       key: ValueKey(tx.id),
                       direction: DismissDirection.endToStart,
-                      onDismissed: (_) => widget.controller.deleteTransaction(tx.id),
+                      onDismissed: (_) {
+                        widget.controller.deleteTransaction(tx.id);
+                        showMorfinToast(context, 'Transaksi dihapus');
+                      },
                       background: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
@@ -117,7 +171,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Vertical timeline dot + rail
                             SizedBox(
                               width: 18,
                               child: Column(
@@ -132,65 +185,68 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                               ),
                             ),
                             Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-                                decoration: BoxDecoration(
-                                  color: MorfinColors.carbon,
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                timeFmt.format(tx.occurredAt),
-                                                style: MorfinTheme.body(10.5, color: const Color(0xFFB5BFB2), weight: FontWeight.w700),
-                                              ),
-                                              Text(
-                                                '${tx.isIncome ? '+' : '-'}${formatIdr(tx.amount)}',
-                                                style: MorfinTheme.display(
-                                                  13,
-                                                  color: tx.isIncome ? MorfinColors.lime : MorfinColors.coralSoft,
+                              child: GestureDetector(
+                                onTap: () => showAddTransactionSheet(context, widget.controller, existing: tx),
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                                  decoration: BoxDecoration(
+                                    color: MorfinColors.carbon,
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  timeFmt.format(tx.occurredAt),
+                                                  style: MorfinTheme.body(10.5, color: const Color(0xFFB5BFB2), weight: FontWeight.w700),
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 5),
-                                          Text(
-                                            tx.title,
-                                            style: MorfinTheme.body(12.5, color: const Color(0xFFEEF3EA), weight: FontWeight.w600),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${tx.category} · ${tx.paymentMethod}',
-                                            style: MorfinTheme.body(10, color: MorfinColors.mutedLight),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    GestureDetector(
-                                      onTap: () => widget.controller.toggleTxVerified(tx),
-                                      child: Container(
-                                        width: 28,
-                                        height: 56,
-                                        decoration: BoxDecoration(
-                                          color: tx.verified ? MorfinColors.lime : const Color(0xFF333833),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Icon(
-                                          Icons.check_rounded,
-                                          size: 16,
-                                          color: tx.verified ? MorfinColors.ink : MorfinColors.mutedLight,
+                                                Text(
+                                                  '${tx.isIncome ? '+' : '-'}${formatIdr(tx.amount)}',
+                                                  style: MorfinTheme.display(
+                                                    13,
+                                                    color: tx.isIncome ? MorfinColors.lime : MorfinColors.coralSoft,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 5),
+                                            Text(
+                                              tx.title,
+                                              style: MorfinTheme.body(12.5, color: const Color(0xFFEEF3EA), weight: FontWeight.w600),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '${tx.category} · ${tx.paymentMethod}',
+                                              style: MorfinTheme.body(10, color: MorfinColors.mutedLight),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 10),
+                                      GestureDetector(
+                                        onTap: () => widget.controller.toggleTxVerified(tx),
+                                        child: Container(
+                                          width: 28,
+                                          height: 56,
+                                          decoration: BoxDecoration(
+                                            color: tx.verified ? MorfinColors.lime : const Color(0xFF333833),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Icon(
+                                            Icons.check_rounded,
+                                            size: 16,
+                                            color: tx.verified ? MorfinColors.ink : MorfinColors.mutedLight,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -221,13 +277,30 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
+  Widget _filterPill(String label, String key) {
+    final active = _typeFilter == key;
+    return GestureDetector(
+      onTap: () => setState(() => _typeFilter = key),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: active ? MorfinColors.carbon : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          style: MorfinTheme.body(11.5, color: active ? MorfinColors.lime : MorfinColors.ink, weight: FontWeight.w800),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryAndWallets(BuildContext context, List<CategoryBarItem> bars, List<MorfinWallet> wallets) {
     return Column(
       children: [
-        // Horizontal Category Bars
         ...bars.take(7).map((bar) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: 9),
             child: Row(
               children: [
                 SizedBox(
@@ -248,7 +321,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     ),
                     child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
-                      widthFactor: (bar.percent / 100.0).clamp(0.12, 1.0),
+                      widthFactor: (bar.percent / 100.0).clamp(0.10, 1.0),
                       child: Container(
                         decoration: BoxDecoration(
                           color: bar.healthy ? MorfinColors.lime : MorfinColors.carbon,
@@ -276,28 +349,48 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         }),
         const Spacer(),
 
-        // Bottom Dark Sheet with Interactive Stacked Overlapping Wallet Cards
+        // Bottom Dark Sheet with Interactive Stacked Overlapping Wallet Cards + Add Wallet button
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
           decoration: const BoxDecoration(
             color: MorfinColors.carbon,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             children: [
-              Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(99)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Kantong Tabungan', style: MorfinTheme.display(13.5, color: Colors.white)),
+                  GestureDetector(
+                    onTap: () => showAddWalletSheet(context, widget.controller),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: MorfinColors.lime,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text('+ Kantong', style: MorfinTheme.body(11, color: MorfinColors.ink, weight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               SizedBox(
                 height: 224,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: _orderedWalletWidgets(context, wallets),
-                ),
+                child: wallets.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Belum ada kantong tabungan.\nTekan "+ Kantong" untuk membuat.',
+                          textAlign: TextAlign.center,
+                          style: MorfinTheme.body(12.5, color: MorfinColors.mutedLight),
+                        ),
+                      )
+                    : Stack(
+                        clipBehavior: Clip.none,
+                        children: _orderedWalletWidgets(context, wallets),
+                      ),
               ),
             ],
           ),
@@ -376,7 +469,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           color: Colors.black.withValues(alpha: 0.28),
                           borderRadius: BorderRadius.circular(99),
                         ),
-                        child: Text('+ Top Up', style: MorfinTheme.body(10, color: Colors.white, weight: FontWeight.w700)),
+                        child: Text('Kelola', style: MorfinTheme.body(10, color: Colors.white, weight: FontWeight.w700)),
                       ),
                     ),
                   ],
