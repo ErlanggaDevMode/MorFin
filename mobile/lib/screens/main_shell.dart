@@ -43,6 +43,10 @@ class _MainShellState extends State<MainShell> {
           key: const ValueKey('tab_home'),
           controller: widget.controller,
           onNavigateTab: _selectTab,
+          onJumpToWallets: () => setState(() {
+            _txInitialSubTab = 1;
+            _tab = 2;
+          }),
         );
       case 1:
         return BudgetScreen(

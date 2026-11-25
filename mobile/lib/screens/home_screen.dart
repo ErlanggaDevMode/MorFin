@@ -10,11 +10,13 @@ import '../widgets/neo_flat_art.dart';
 class HomeScreen extends StatefulWidget {
   final MorfinController controller;
   final ValueChanged<int> onNavigateTab;
+  final VoidCallback? onJumpToWallets;
 
   const HomeScreen({
     super.key,
     required this.controller,
     required this.onNavigateTab,
+    this.onJumpToWallets,
   });
 
   @override
@@ -36,6 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final budgetRem = hide ? 'Rp •••' : formatIdrCompact(summary?.budgetRemaining ?? 0);
     final days = summary?.weeklyDays ?? [];
     final series = summary?.weeklySeries ?? [];
+    final wallets = dash?.wallets ?? [];
+    final transactions = dash?.transactions ?? [];
     final monthLabel = DateFormat('MMMM yyyy').format(DateTime.now());
 
     return LayoutBuilder(
@@ -51,6 +55,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         );
         final rightColumn = _buildWeeklyCashflowChart(context, series, summary, hide);
+        final walletsStrip = _buildWalletsStrip(context, controller, wallets, hide);
+        final recentTxCard = _buildRecentTransactions(context, controller, transactions, hide);
 
         return RefreshIndicator(
           color: MorfinColors.carbon,
@@ -61,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               header,
               const SizedBox(height: 18),
-              if (isWide)
+              if (isWide) ...[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -69,11 +75,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 20),
                     Expanded(flex: 12, child: rightColumn),
                   ],
-                )
-              else ...[
+                ),
+                const SizedBox(height: 18),
+                walletsStrip,
+                const SizedBox(height: 18),
+                recentTxCard,
+              ] else ...[
                 leftColumn,
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
+                walletsStrip,
+                const SizedBox(height: 16),
                 rightColumn,
+                const SizedBox(height: 16),
+                recentTxCard,
               ],
             ],
           ),
@@ -635,6 +649,407 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildWalletsStrip(
+    BuildContext context,
+    MorfinController controller,
+    List<MorfinWallet> wallets,
+    bool hide,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text('Kantong & Dompet', style: MorfinTheme.display(16)),
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(99),
+              onTap: () => showAddWalletSheet(context, controller),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 15, color: MorfinColors.ink),
+                    const SizedBox(width: 3),
+                    Text('Kantong', style: MorfinTheme.body(11, weight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            InkWell(
+              borderRadius: BorderRadius.circular(99),
+              onTap: () {
+                if (widget.onJumpToWallets != null) {
+                  widget.onJumpToWallets!();
+                } else {
+                  widget.onNavigateTab(2);
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Text(
+                  'Lihat Semua',
+                  style: MorfinTheme.body(11.5, color: MorfinColors.limeDeep, weight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (wallets.isEmpty)
+          InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => showAddWalletSheet(context, controller),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: MorfinColors.ink.withValues(alpha: 0.08)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: MorfinColors.pistachio,
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(Icons.account_balance_wallet_rounded, size: 20, color: MorfinColors.ink),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Belum ada kantong', style: MorfinTheme.display(13.5)),
+                        Text(
+                          'Ketuk untuk membuat kantong Cash, Bank, atau E-Wallet',
+                          style: MorfinTheme.body(11, color: MorfinColors.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.add_circle_rounded, color: MorfinColors.carbon, size: 22),
+                ],
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 124,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: wallets.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, idx) {
+                final w = wallets[idx];
+                final isDark = w.colorVariant == 'carbon' || w.colorVariant == 'dark';
+                final isLime = w.colorVariant == 'lime';
+                final bg = isDark
+                    ? MorfinColors.carbon
+                    : isLime
+                        ? MorfinColors.lime
+                        : Colors.white;
+                final fg = isDark ? Colors.white : MorfinColors.ink;
+                final sub = isDark
+                    ? MorfinColors.mutedLight
+                    : isLime
+                        ? MorfinColors.ink.withValues(alpha: 0.72)
+                        : MorfinColors.muted;
+                final barTrack = isDark
+                    ? Colors.white.withValues(alpha: 0.14)
+                    : isLime
+                        ? MorfinColors.ink.withValues(alpha: 0.14)
+                        : MorfinColors.pistachio;
+                final barFill = isDark
+                    ? MorfinColors.lime
+                    : isLime
+                        ? MorfinColors.carbon
+                        : MorfinColors.lime;
+
+                return InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => showTopUpWalletSheet(context, controller, w),
+                  child: Container(
+                    width: 164,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: bg,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        if (!isDark)
+                          BoxShadow(
+                            color: MorfinColors.ink.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : isLime
+                                        ? Colors.white.withValues(alpha: 0.45)
+                                        : MorfinColors.pistachio,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(_walletIcon(w.icon), size: 16, color: fg),
+                            ),
+                            if (w.targetAmount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.12)
+                                      : MorfinColors.ink.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                                child: Text(
+                                  '${w.progressPercent}%',
+                                  style: MorfinTheme.body(10, color: fg, weight: FontWeight.w800),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const Spacer(),
+                        Text(
+                          w.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: MorfinTheme.body(11.5, color: sub, weight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          hide ? 'Rp •••' : formatIdr(w.currentAmount),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: MorfinTheme.display(14.5, color: fg),
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(99),
+                          child: LinearProgressIndicator(
+                            value: (w.progressPercent / 100.0).clamp(0.0, 1.0),
+                            minHeight: 5,
+                            backgroundColor: barTrack,
+                            valueColor: AlwaysStoppedAnimation<Color>(barFill),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRecentTransactions(
+    BuildContext context,
+    MorfinController controller,
+    List<MorfinTransaction> transactions,
+    bool hide,
+  ) {
+    final recent = transactions.take(5).toList();
+    final dateFmt = DateFormat('d MMM');
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Transaksi Terbaru', style: MorfinTheme.display(16)),
+                    Text(
+                      recent.isEmpty
+                          ? 'Belum ada catatan transaksi'
+                          : 'Menampilkan ${recent.length} catatan terakhir',
+                      style: MorfinTheme.body(11, color: MorfinColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(99),
+                onTap: () => widget.onNavigateTab(2),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: MorfinColors.pistachio,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    'Lihat Semua',
+                    style: MorfinTheme.body(11, color: MorfinColors.ink, weight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (recent.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 14),
+              decoration: BoxDecoration(
+                color: MorfinColors.pistachio,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Catat pemasukan atau pengeluaran pertamamu',
+                    textAlign: TextAlign.center,
+                    style: MorfinTheme.body(12, color: MorfinColors.muted, weight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MorfinColors.carbon,
+                      foregroundColor: MorfinColors.lime,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    ),
+                    onPressed: () => showAddTransactionSheet(context, controller),
+                    icon: const Icon(Icons.add_rounded, size: 17),
+                    label: Text('Catat Transaksi', style: MorfinTheme.display(12.5, color: MorfinColors.lime)),
+                  ),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: List.generate(recent.length, (i) {
+                final tx = recent[i];
+                final isIncome = tx.isIncome;
+                final formattedDate = _safeFormatDate(dateFmt, tx.occurredAt);
+                return Column(
+                  children: [
+                    InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => showAddTransactionSheet(context, controller, existing: tx),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: isIncome
+                                    ? MorfinColors.lime.withValues(alpha: 0.24)
+                                    : MorfinColors.pistachio,
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: Icon(
+                                isIncome ? Icons.south_west_rounded : Icons.north_east_rounded,
+                                size: 19,
+                                color: isIncome ? MorfinColors.limeDeep : MorfinColors.carbon,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tx.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: MorfinTheme.display(13.5),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${tx.category} · ${tx.paymentMethod} · $formattedDate',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: MorfinTheme.body(11, color: MorfinColors.muted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              hide
+                                  ? '${isIncome ? "+" : "-"}Rp •••'
+                                  : '${isIncome ? "+" : "-"}${formatIdr(tx.amount)}',
+                              style: MorfinTheme.display(
+                                13,
+                                color: isIncome ? MorfinColors.limeDeep : MorfinColors.ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (i < recent.length - 1)
+                      Divider(height: 1, color: MorfinColors.ink.withValues(alpha: 0.06)),
+                  ],
+                );
+              }),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _safeFormatDate(DateFormat fmt, DateTime dt) {
+    try {
+      return fmt.format(dt);
+    } catch (_) {
+      return DateFormat('d MMM').format(dt);
+    }
+  }
+
+  IconData _walletIcon(String key) {
+    switch (key) {
+      case 'shield':
+        return Icons.shield_rounded;
+      case 'laptop':
+        return Icons.laptop_mac_rounded;
+      case 'flight':
+      case 'travel':
+        return Icons.flight_takeoff_rounded;
+      case 'home':
+        return Icons.home_rounded;
+      case 'savings':
+      case 'piggy':
+        return Icons.savings_rounded;
+      default:
+        return Icons.account_balance_wallet_rounded;
+    }
   }
 
   Widget _legendDot(Color color, String label) => Row(

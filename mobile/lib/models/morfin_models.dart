@@ -288,7 +288,7 @@ class DashboardSummary {
       totalIncome: (j['totalIncome'] as num?)?.toInt() ?? 0,
       totalExpense: (j['totalExpense'] as num?)?.toInt() ?? 0,
       savingsRate: (j['savingsRate'] as num?)?.toInt() ?? 0,
-      hematStreakDays: (j['hematStreakDays'] as num?)?.toInt() ?? 25,
+      hematStreakDays: (j['hematStreakDays'] as num?)?.toInt() ?? 0,
       budgetRemaining: (j['budgetRemaining'] as num?)?.toInt() ?? 0,
       budgetHealthPercent: (j['budgetHealthPercent'] as num?)?.toInt() ?? 72,
       weeklyDays: ((j['weeklyDays'] as List?) ?? [])
