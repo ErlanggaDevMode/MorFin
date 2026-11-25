@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:morfin/main.dart';
 import 'package:morfin/screens/duolingo_splash_screen.dart';
 import 'package:morfin/state/morfin_controller.dart';
+import 'package:morfin/widgets/morfin_status_notify.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -44,5 +45,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Buat Akun MorFin'), findsOneWidget);
     expect(find.text('Nama Lengkap'), findsOneWidget);
+  });
+
+  testWidgets('MorFin status notify shows success/error and dismisses on tap anywhere', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (ctx) => Center(
+              child: ElevatedButton(
+                onPressed: () => showMorfinStatusNotify(
+                  ctx,
+                  isSuccess: true,
+                  title: 'Tersimpan!',
+                  message: 'Transaksi berhasil dicatat.',
+                ),
+                child: const Text('Trigger'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Trigger'));
+    await tester.pump(const Duration(milliseconds: 450));
+
+    expect(find.text('Tersimpan!'), findsOneWidget);
+    expect(find.text('Transaksi berhasil dicatat.'), findsOneWidget);
+
+    // Tap anywhere on screen (top-left backdrop corner) dismisses notify cleanly
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tersimpan!'), findsNothing);
   });
 }

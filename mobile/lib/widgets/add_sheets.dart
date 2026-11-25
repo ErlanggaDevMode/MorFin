@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import '../core/theme/morfin_theme.dart';
 import '../models/morfin_models.dart';
 import '../state/morfin_controller.dart';
+import 'morfin_status_notify.dart';
+
+String _cleanErr(Object e) => e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '').trim();
 
 void showMorfinToast(BuildContext context, String message, {bool isError = false}) {
   ScaffoldMessenger.of(context)
@@ -128,10 +131,27 @@ Future<void> showAddTransactionSheet(
                           ? null
                           : () async {
                               setState(() => saving = true);
-                              await ctrl.deleteTransaction(existing.id);
-                              if (ctx.mounted) {
-                                Navigator.pop(ctx);
-                                showMorfinToast(context, 'Transaksi dihapus');
+                              try {
+                                await ctrl.deleteTransaction(existing.id);
+                                if (ctx.mounted) {
+                                  Navigator.pop(ctx);
+                                  showMorfinStatusNotify(
+                                    context,
+                                    isSuccess: true,
+                                    title: 'Dihapus!',
+                                    message: 'Transaksi "${existing.title}" berhasil dihapus.',
+                                  );
+                                }
+                              } catch (e) {
+                                if (ctx.mounted) {
+                                  setState(() => saving = false);
+                                  showMorfinStatusNotify(
+                                    context,
+                                    isSuccess: false,
+                                    title: 'Gagal!',
+                                    message: _cleanErr(e),
+                                  );
+                                }
                               }
                             },
                     ),
@@ -295,11 +315,27 @@ Future<void> showAddTransactionSheet(
                               );
                             }
                             if (ctx.mounted) {
+                              final label = titleCtrl.text.trim();
                               Navigator.pop(ctx);
-                              showMorfinToast(context, isEdit ? 'Transaksi diperbarui' : 'Transaksi disimpan');
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: true,
+                                title: isEdit ? 'Diperbarui!' : 'Tersimpan!',
+                                message: isEdit
+                                    ? 'Perubahan transaksi "$label" berhasil disimpan.'
+                                    : '${type == "income" ? "Pemasukan" : "Pengeluaran"} "$label" (${formatIdr(amount)}) berhasil dicatat.',
+                              );
                             }
                           } catch (e) {
-                            setState(() => errorMsg = e.toString());
+                            setState(() => errorMsg = _cleanErr(e));
+                            if (context.mounted) {
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: false,
+                                title: 'Gagal Menyimpan!',
+                                message: _cleanErr(e),
+                              );
+                            }
                           } finally {
                             if (ctx.mounted) setState(() => saving = false);
                           }
@@ -361,10 +397,27 @@ Future<void> showAddBudgetSheet(
                           ? null
                           : () async {
                               setState(() => saving = true);
-                              await ctrl.deleteBudget(existing.id);
-                              if (ctx.mounted) {
-                                Navigator.pop(ctx);
-                                showMorfinToast(context, 'Anggaran dihapus');
+                              try {
+                                await ctrl.deleteBudget(existing.id);
+                                if (ctx.mounted) {
+                                  Navigator.pop(ctx);
+                                  showMorfinStatusNotify(
+                                    context,
+                                    isSuccess: true,
+                                    title: 'Dihapus!',
+                                    message: 'Anggaran "${existing.name}" berhasil dihapus.',
+                                  );
+                                }
+                              } catch (e) {
+                                if (ctx.mounted) {
+                                  setState(() => saving = false);
+                                  showMorfinStatusNotify(
+                                    context,
+                                    isSuccess: false,
+                                    title: 'Gagal!',
+                                    message: _cleanErr(e),
+                                  );
+                                }
                               }
                             },
                     ),
@@ -456,8 +509,25 @@ Future<void> showAddBudgetSheet(
                               );
                             }
                             if (ctx.mounted) {
+                              final label = nameCtrl.text.trim();
                               Navigator.pop(ctx);
-                              showMorfinToast(context, isEdit ? 'Anggaran diperbarui' : 'Anggaran disimpan');
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: true,
+                                title: isEdit ? 'Diperbarui!' : 'Tersimpan!',
+                                message: isEdit
+                                    ? 'Anggaran "$label" berhasil diperbarui.'
+                                    : 'Anggaran "$label" (${formatIdr(limit)}) berhasil disimpan.',
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: false,
+                                title: 'Gagal Menyimpan!',
+                                message: _cleanErr(e),
+                              );
                             }
                           } finally {
                             if (ctx.mounted) setState(() => saving = false);
@@ -540,8 +610,23 @@ Future<void> showAddWalletSheet(BuildContext context, MorfinController ctrl) asy
                               targetAmount: target,
                             );
                             if (ctx.mounted) {
+                              final label = nameCtrl.text.trim();
                               Navigator.pop(ctx);
-                              showMorfinToast(context, 'Kantong berhasil dibuat');
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: true,
+                                title: 'Tersimpan!',
+                                message: 'Kantong "$label" berhasil dibuat.',
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: false,
+                                title: 'Gagal Menyimpan!',
+                                message: _cleanErr(e),
+                              );
                             }
                           } finally {
                             if (ctx.mounted) setState(() => saving = false);
@@ -588,10 +673,27 @@ Future<void> showTopUpWalletSheet(BuildContext context, MorfinController ctrl, M
                       ? null
                       : () async {
                           setState(() => saving = true);
-                          await ctrl.deleteWallet(wallet.id);
-                          if (ctx.mounted) {
-                            Navigator.pop(ctx);
-                            showMorfinToast(context, 'Kantong dihapus');
+                          try {
+                            await ctrl.deleteWallet(wallet.id);
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: true,
+                                title: 'Dihapus!',
+                                message: 'Kantong "${wallet.name}" berhasil dihapus.',
+                              );
+                            }
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              setState(() => saving = false);
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: false,
+                                title: 'Gagal!',
+                                message: _cleanErr(e),
+                              );
+                            }
                           }
                         },
                 ),
@@ -647,7 +749,23 @@ Future<void> showTopUpWalletSheet(BuildContext context, MorfinController ctrl, M
                           await ctrl.topUpWallet(wallet, isWithdraw ? -val : val);
                           if (ctx.mounted) {
                             Navigator.pop(ctx);
-                            showMorfinToast(context, isWithdraw ? 'Saldo kantong ditarik' : 'Saldo kantong ditambahkan');
+                            showMorfinStatusNotify(
+                              context,
+                              isSuccess: true,
+                              title: 'Berhasil!',
+                              message: isWithdraw
+                                  ? 'Saldo ${formatIdr(val)} ditarik dari kantong "${wallet.name}".'
+                                  : 'Saldo ${formatIdr(val)} ditambahkan ke kantong "${wallet.name}".',
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            showMorfinStatusNotify(
+                              context,
+                              isSuccess: false,
+                              title: 'Gagal!',
+                              message: _cleanErr(e),
+                            );
                           }
                         } finally {
                           if (ctx.mounted) setState(() => saving = false);
@@ -730,8 +848,23 @@ Future<void> showAddGoalSheet(BuildContext context, MorfinController ctrl) async
                               savedAmount: saved,
                             );
                             if (ctx.mounted) {
+                              final label = titleCtrl.text.trim();
                               Navigator.pop(ctx);
-                              showMorfinToast(context, 'Target berhasil disimpan');
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: true,
+                                title: 'Tersimpan!',
+                                message: 'Target "$label" berhasil disimpan.',
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: false,
+                                title: 'Gagal Menyimpan!',
+                                message: _cleanErr(e),
+                              );
                             }
                           } finally {
                             if (ctx.mounted) setState(() => saving = false);
@@ -779,10 +912,27 @@ Future<void> showGoalDetailSheet(BuildContext context, MorfinController ctrl, Mo
                         ? null
                         : () async {
                             setState(() => saving = true);
-                            await ctrl.deleteGoal(goal.id);
-                            if (ctx.mounted) {
-                              Navigator.pop(ctx);
-                              showMorfinToast(context, 'Target dihapus');
+                            try {
+                              await ctrl.deleteGoal(goal.id);
+                              if (ctx.mounted) {
+                                Navigator.pop(ctx);
+                                showMorfinStatusNotify(
+                                  context,
+                                  isSuccess: true,
+                                  title: 'Dihapus!',
+                                  message: 'Target "${goal.title}" berhasil dihapus.',
+                                );
+                              }
+                            } catch (e) {
+                              if (ctx.mounted) {
+                                setState(() => saving = false);
+                                showMorfinStatusNotify(
+                                  context,
+                                  isSuccess: false,
+                                  title: 'Gagal!',
+                                  message: _cleanErr(e),
+                                );
+                              }
                             }
                           },
                   ),
@@ -854,7 +1004,21 @@ Future<void> showGoalDetailSheet(BuildContext context, MorfinController ctrl, Mo
                             await ctrl.updateGoalDetails(goal, savedAmount: nextSaved, status: nextStatus);
                             if (ctx.mounted) {
                               Navigator.pop(ctx);
-                              showMorfinToast(context, 'Target diperbarui');
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: true,
+                                title: 'Diperbarui!',
+                                message: 'Progres target "${goal.title}" berhasil disimpan.',
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              showMorfinStatusNotify(
+                                context,
+                                isSuccess: false,
+                                title: 'Gagal Menyimpan!',
+                                message: _cleanErr(e),
+                              );
                             }
                           } finally {
                             if (ctx.mounted) setState(() => saving = false);

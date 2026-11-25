@@ -4,6 +4,7 @@ import '../core/theme/morfin_theme.dart';
 import '../models/morfin_models.dart';
 import '../state/morfin_controller.dart';
 import '../widgets/add_sheets.dart';
+import '../widgets/morfin_status_notify.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final MorfinController controller;
@@ -209,9 +210,27 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     return Dismissible(
                       key: ValueKey(tx.id),
                       direction: DismissDirection.endToStart,
-                      onDismissed: (_) {
-                        widget.controller.deleteTransaction(tx.id);
-                        showMorfinToast(context, 'Transaksi dihapus');
+                      onDismissed: (_) async {
+                        try {
+                          await widget.controller.deleteTransaction(tx.id);
+                          if (context.mounted) {
+                            showMorfinStatusNotify(
+                              context,
+                              isSuccess: true,
+                              title: 'Dihapus!',
+                              message: 'Transaksi "${tx.title}" berhasil dihapus.',
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            showMorfinStatusNotify(
+                              context,
+                              isSuccess: false,
+                              title: 'Gagal Menghapus!',
+                              message: e.toString().replaceFirst(RegExp(r'^Exception:\s*'), ''),
+                            );
+                          }
+                        }
                       },
                       background: Container(
                         alignment: Alignment.centerRight,
