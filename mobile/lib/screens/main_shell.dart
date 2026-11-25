@@ -25,7 +25,7 @@ class _MainShellState extends State<MainShell> {
     (Icons.pie_chart_rounded, 'Anggaran'),
     (Icons.swap_vert_rounded, 'Transaksi'),
     (Icons.emoji_events_rounded, 'Target'),
-    (Icons.tune_rounded, 'Setting'),
+    (Icons.settings_rounded, 'Setting'),
   ];
 
   void _selectTab(int idx) {
@@ -253,42 +253,55 @@ class _MainShellState extends State<MainShell> {
           body: SafeArea(child: _animatedPageBody()),
           bottomNavigationBar: Container(
             color: bgColor,
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 12),
             child: Container(
-              height: 62,
-              padding: const EdgeInsets.symmetric(horizontal: 6),
+              height: 66,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               decoration: BoxDecoration(
                 color: isDarkTab ? const Color(0xFF1C201C) : MorfinColors.carbon,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: List.generate(_navItems.length, (i) {
                   final active = _tab == i;
                   final item = _navItems[i];
-                  return GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _selectTab(i),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
-                      padding: EdgeInsets.symmetric(horizontal: active ? 12 : 9, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: active ? MorfinColors.lime : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(item.$1, size: 19, color: active ? MorfinColors.ink : Colors.white70),
-                          if (active) ...[
-                            const SizedBox(width: 5),
-                            Text(
-                              item.$2,
-                              style: MorfinTheme.body(11.5, color: MorfinColors.ink, weight: FontWeight.w800),
+                  return Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _selectTab(i),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: active ? MorfinColors.lime : Colors.transparent,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              item.$1,
+                              size: 20,
+                              color: active ? MorfinColors.ink : Colors.white70,
+                            ),
+                            const SizedBox(height: 2),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                item.$2,
+                                maxLines: 1,
+                                style: MorfinTheme.body(
+                                  10,
+                                  color: active ? MorfinColors.ink : Colors.white70,
+                                  weight: active ? FontWeight.w800 : FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   );
