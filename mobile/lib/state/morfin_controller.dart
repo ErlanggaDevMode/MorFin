@@ -109,25 +109,32 @@ class MorfinController extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      if (kIsWeb && AppConfig.googleClientId.isEmpty) {
-        throw MorfinApiException(
-          'Google OAuth Client ID Web belum diatur (--dart-define=GOOGLE_CLIENT_ID=...). Gunakan login Email atau pasang Client ID di Google Cloud Console.',
-        );
-      }
-
       if (!_googleInitialized) {
         await GoogleSignIn.instance.initialize(
-          clientId: AppConfig.googleClientId.isEmpty ? null : AppConfig.googleClientId,
-          serverClientId: AppConfig.googleServerClientId.isEmpty ? null : AppConfig.googleServerClientId,
+          clientId: kIsWeb && AppConfig.googleClientId.isNotEmpty ? AppConfig.googleClientId : null,
+          serverClientId: !kIsWeb && AppConfig.googleServerClientId.isNotEmpty
+              ? AppConfig.googleServerClientId
+              : null,
         );
         _googleInitialized = true;
       }
 
-      final account = await GoogleSignIn.instance.authenticate();
-      final idToken = account.authentication.idToken;
+      String? idToken;
       String? accessToken;
-      if (idToken == null || idToken.isEmpty) {
-        final authz = await account.authorizationClient.authorizeScopes(['email', 'profile']);
+
+      if (GoogleSignIn.instance.supportsAuthenticate()) {
+        // Android / iOS native Google Sign-In flow
+        final account = await GoogleSignIn.instance.authenticate();
+        idToken = account.authentication.idToken;
+        if (idToken == null || idToken.isEmpty) {
+          final authz = await account.authorizationClient.authorizeScopes(['email', 'profile']);
+          accessToken = authz.accessToken;
+        }
+      } else {
+        // Web GIS OAuth 2.0 popup flow (returns verified Google accessToken for VPS backend)
+        final authz = await GoogleSignIn.instance.authorizationClient.authorizeScopes(
+          const ['openid', 'email', 'profile'],
+        );
         accessToken = authz.accessToken;
       }
 

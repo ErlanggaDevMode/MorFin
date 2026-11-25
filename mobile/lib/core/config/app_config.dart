@@ -6,15 +6,15 @@ class AppConfig {
     defaultValue: 'https://nayakacode.web.id/morfin-api',
   );
 
-  /// Google OAuth Client ID (Web / iOS) — set via --dart-define=GOOGLE_CLIENT_ID=...
+  /// Google OAuth Web Client ID (public client identifier, overridable via --dart-define)
   static const String googleClientId = String.fromEnvironment(
     'GOOGLE_CLIENT_ID',
-    defaultValue: '',
+    defaultValue: '669965320780-k4a7kv6m2080a3br9lsna91rcvgoo0bt.apps.googleusercontent.com',
   );
 
   /// Google OAuth Web/Server Client ID used by Android to mint ID tokens for VPS backend.
   static const String googleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
-    defaultValue: '',
+    defaultValue: '669965320780-k4a7kv6m2080a3br9lsna91rcvgoo0bt.apps.googleusercontent.com',
   );
 }
