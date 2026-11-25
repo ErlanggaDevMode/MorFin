@@ -11,12 +11,18 @@ class HomeScreen extends StatefulWidget {
   final MorfinController controller;
   final ValueChanged<int> onNavigateTab;
   final VoidCallback? onJumpToWallets;
+  final GlobalKey? tourBalanceKey;
+  final GlobalKey? tourQuickAddKey;
+  final GlobalKey? tourWalletsKey;
 
   const HomeScreen({
     super.key,
     required this.controller,
     required this.onNavigateTab,
     this.onJumpToWallets,
+    this.tourBalanceKey,
+    this.tourQuickAddKey,
+    this.tourWalletsKey,
   });
 
   @override
@@ -158,6 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(width: 6),
         IconButton(
+          key: widget.tourQuickAddKey,
           tooltip: 'Catat Transaksi',
           onPressed: () => showAddTransactionSheet(context, widget.controller),
           icon: Container(
@@ -179,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool hide,
   ) {
     return Stack(
+      key: widget.tourBalanceKey,
       children: [
         Container(
           width: double.infinity,
@@ -658,6 +666,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool hide,
   ) {
     return Column(
+      key: widget.tourWalletsKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(

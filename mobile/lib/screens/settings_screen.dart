@@ -11,7 +11,13 @@ import '../widgets/add_sheets.dart';
 
 class SettingsScreen extends StatefulWidget {
   final MorfinController controller;
-  const SettingsScreen({super.key, required this.controller});
+  final VoidCallback? onStartTour;
+
+  const SettingsScreen({
+    super.key,
+    required this.controller,
+    this.onStartTour,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -415,6 +421,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (widget.onStartTour != null) ...[
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: MorfinColors.ink,
+                        side: BorderSide(color: MorfinColors.ink.withValues(alpha: 0.16)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      icon: const Icon(Icons.explore_outlined, size: 18),
+                      label: Text('Ulangi Tour Panduan Fitur', style: MorfinTheme.body(13, weight: FontWeight.w700)),
+                      onPressed: widget.onStartTour,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: MorfinColors.coral,

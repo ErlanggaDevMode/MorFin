@@ -4,6 +4,7 @@ import 'package:morfin/main.dart';
 import 'package:morfin/screens/duolingo_splash_screen.dart';
 import 'package:morfin/state/morfin_controller.dart';
 import 'package:morfin/widgets/morfin_status_notify.dart';
+import 'package:morfin/widgets/morfin_tour_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -79,5 +80,58 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Tersimpan!'), findsNothing);
+  });
+
+  testWidgets('MorFin onboarding tour shows Ikuti Tour / Skip Tour and steps through features', (tester) async {
+    final targetKey = GlobalKey();
+    bool finished = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              Center(
+                child: Container(
+                  key: targetKey,
+                  width: 180,
+                  height: 60,
+                  color: Colors.green,
+                  child: const Center(child: Text('Kartu Saldo')),
+                ),
+              ),
+              MorfinTourOverlay(
+                steps: [
+                  MorfinTourStep(
+                    targetKey: targetKey,
+                    title: 'Total Saldo & Privasi',
+                    description: 'Pantau saldo bersihmu di sini.',
+                  ),
+                ],
+                onFinished: () => finished = true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Welcome choice modal visible with Ikuti Tour and Skip Tour
+    expect(find.text('Ikuti Tour'), findsOneWidget);
+    expect(find.text('Skip Tour'), findsOneWidget);
+
+    // Start tour -> focuses step 1 with speech bubble
+    await tester.tap(find.text('Ikuti Tour'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 / 1'), findsOneWidget);
+    expect(find.text('Total Saldo & Privasi'), findsOneWidget);
+    expect(find.text('Mulai Pakai'), findsOneWidget);
+
+    // Finish tour
+    await tester.tap(find.text('Mulai Pakai'));
+    await tester.pumpAndSettle();
+    expect(finished, isTrue);
   });
 }

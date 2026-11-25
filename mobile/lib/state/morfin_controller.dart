@@ -16,6 +16,7 @@ class MorfinController extends ChangeNotifier {
   bool isInitialized = false;
   bool isLoading = false;
   bool hasPassedSplash = false;
+  bool shouldShowTour = false;
   String? errorMessage;
   String selectedBudgetPeriod = 'daily';
   String themeId = 'matcha';
@@ -42,6 +43,7 @@ class MorfinController extends ChangeNotifier {
         user = await api.fetchMe();
         dashboard = await api.fetchDashboard();
         hasPassedSplash = true;
+        shouldShowTour = !(prefs.getBool('morfin_tour_seen_v1_${user!.id}') ?? false);
       }
     } catch (_) {
       api.setToken(null);
@@ -73,6 +75,23 @@ class MorfinController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> completeTour() async {
+    shouldShowTour = false;
+    notifyListeners();
+    try {
+      final uid = user?.id;
+      if (uid != null && uid.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('morfin_tour_seen_v1_$uid', true);
+      }
+    } catch (_) {}
+  }
+
+  void startTour() {
+    shouldShowTour = true;
+    notifyListeners();
+  }
+
   Future<void> _persistSession(AuthResult auth) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, auth.token);
@@ -80,6 +99,7 @@ class MorfinController extends ChangeNotifier {
     user = auth.user;
     dashboard = await api.fetchDashboard();
     hasPassedSplash = true;
+    shouldShowTour = !(prefs.getBool('morfin_tour_seen_v1_${auth.user.id}') ?? false);
   }
 
   Future<bool> registerWithEmail({

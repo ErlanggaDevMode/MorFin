@@ -43,11 +43,14 @@ test('MorFin API end-to-end auth + PostgreSQL finance CRUD', async () => {
   });
   assert.equal(gBad.status, 401);
 
-  // 5. Dashboard loads seeded wallets, budgets, transactions, goals
+  // 5. Dashboard starts completely clean & empty by default for new users
   const dash = await fetch(`${BASE}/api/dashboard`, { headers: authHeaders }).then((r) => r.json());
-  assert.ok(dash.summary.totalBalance > 0);
-  assert.ok(dash.wallets.length >= 3);
-  assert.ok(dash.goals.length >= 6);
+  assert.equal(dash.summary.totalBalance, 0);
+  assert.equal(dash.summary.hematStreakDays, 0);
+  assert.equal(dash.transactions.length, 0);
+  assert.equal(dash.wallets.length, 0);
+  assert.equal(dash.budgets.length, 0);
+  assert.equal(dash.goals.length, 0);
 
   // 6. Create & toggle & delete Transaction
   const txCreate = await fetch(`${BASE}/api/transactions`, {

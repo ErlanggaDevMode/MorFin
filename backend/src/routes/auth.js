@@ -75,7 +75,7 @@ router.post('/register', async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
     const name = String(req.body?.name || '').trim();
-    const seedDemo = req.body?.seedDemo !== false;
+    const seedDemo = req.body?.seedDemo === true;
 
     if (!email || !email.includes('@')) {
       return res.status(400).json({ error: 'Format email tidak valid.' });
@@ -197,7 +197,6 @@ router.post('/google', async (req, res) => {
         [profile.email, profile.name, profile.sub, profile.avatarUrl]
       );
       userRow = inserted.rows[0];
-      await seedStarterDataForUser(userRow.id);
     }
 
     const token = signAccessToken(userRow);

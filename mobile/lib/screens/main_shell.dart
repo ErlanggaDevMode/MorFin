@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/morfin_theme.dart';
 import '../state/morfin_controller.dart';
 import '../widgets/add_sheets.dart';
+import '../widgets/morfin_tour_overlay.dart';
 import 'budget_screen.dart';
 import 'duolingo_splash_screen.dart';
 import 'goals_screen.dart';
@@ -21,6 +22,11 @@ class _MainShellState extends State<MainShell> {
   int _tab = 0;
   int _txInitialSubTab = 0;
 
+  final GlobalKey _tourBalanceKey = GlobalKey();
+  final GlobalKey _tourQuickAddKey = GlobalKey();
+  final GlobalKey _tourWalletsKey = GlobalKey();
+  final List<GlobalKey> _tourNavKeys = List.generate(5, (_) => GlobalKey());
+
   static const _navItems = [
     (Icons.grid_view_rounded, 'Beranda'),
     (Icons.pie_chart_rounded, 'Anggaran'),
@@ -28,6 +34,51 @@ class _MainShellState extends State<MainShell> {
     (Icons.emoji_events_rounded, 'Target'),
     (Icons.settings_rounded, 'Setting'),
   ];
+
+  List<MorfinTourStep> _buildTourSteps() => [
+        MorfinTourStep(
+          targetKey: _tourBalanceKey,
+          title: 'Total Saldo & Privasi',
+          description: 'Pantau saldo bersih dan disiplin harianmu. Ketuk tombol mata di pojok kartu untuk menyembunyikan nominal kapan saja.',
+          borderRadius: 24,
+        ),
+        MorfinTourStep(
+          targetKey: _tourQuickAddKey,
+          title: 'Catat Transaksi Cepat',
+          description: 'Ketuk tombol + ini untuk mencatat pemasukan atau pengeluaran baru hanya dalam beberapa detik.',
+          borderRadius: 99,
+        ),
+        MorfinTourStep(
+          targetKey: _tourWalletsKey,
+          title: 'Kantong & Dompet',
+          description: 'Pisahkan uang ke beberapa kantong (Cash, Bank, E-Wallet) agar alokasi danamu selalu rapi dan terpantau.',
+          borderRadius: 20,
+        ),
+        MorfinTourStep(
+          targetKey: _tourNavKeys[1],
+          title: 'Menu Anggaran',
+          description: 'Atur batas pengeluaran harian, mingguan, atau bulanan supaya keuangan tetap aman tanpa boncos.',
+          borderRadius: 16,
+        ),
+        MorfinTourStep(
+          targetKey: _tourNavKeys[2],
+          title: 'Riwayat Transaksi',
+          description: 'Lihat catatan harian, grafik per kategori, serta kelola seluruh daftar transaksi dan kantongmu di sini.',
+          borderRadius: 16,
+        ),
+        MorfinTourStep(
+          targetKey: _tourNavKeys[3],
+          title: 'Target Tabungan',
+          description: 'Buat target impian seperti Dana Darurat atau beli barang, lalu pantau progres pencapaiannya.',
+          borderRadius: 16,
+        ),
+        MorfinTourStep(
+          targetKey: _tourNavKeys[4],
+          title: 'Pengaturan & Ekspor',
+          description: 'Ubah gaya warna aplikasi, ekspor laporan ke PNG atau PDF, hingga ulangi tur panduan ini kapan saja.',
+          borderRadius: 16,
+        ),
+      ];
 
   void _selectTab(int idx) {
     setState(() {
@@ -47,6 +98,9 @@ class _MainShellState extends State<MainShell> {
             _txInitialSubTab = 1;
             _tab = 2;
           }),
+          tourBalanceKey: _tourBalanceKey,
+          tourQuickAddKey: _tourQuickAddKey,
+          tourWalletsKey: _tourWalletsKey,
         );
       case 1:
         return BudgetScreen(
@@ -72,6 +126,10 @@ class _MainShellState extends State<MainShell> {
         return SettingsScreen(
           key: const ValueKey('tab_settings'),
           controller: widget.controller,
+          onStartTour: () {
+            setState(() => _tab = 0);
+            widget.controller.startTour();
+          },
         );
     }
   }
@@ -107,7 +165,7 @@ class _MainShellState extends State<MainShell> {
         if (isDesktop) {
           // True Responsive Web / Desktop Sidebar Shell
           final user = widget.controller.user;
-          return Scaffold(
+          final desktopScaffold = Scaffold(
             backgroundColor: bgColor,
             body: Row(
               children: [
@@ -155,6 +213,7 @@ class _MainShellState extends State<MainShell> {
                         final active = _tab == i;
                         final item = _navItems[i];
                         return Padding(
+                          key: _tourNavKeys[i],
                           padding: const EdgeInsets.only(bottom: 6),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(14),
@@ -246,10 +305,20 @@ class _MainShellState extends State<MainShell> {
               ],
             ),
           );
+          return Stack(
+            children: [
+              desktopScaffold,
+              if (widget.controller.shouldShowTour && _tab == 0)
+                MorfinTourOverlay(
+                  steps: _buildTourSteps(),
+                  onFinished: widget.controller.completeTour,
+                ),
+            ],
+          );
         }
 
         // Mobile & Compact Layout with sleek 5-tab floating Carbon Bottom Nav
-        return Scaffold(
+        final mobileScaffold = Scaffold(
           backgroundColor: bgColor,
           body: SafeArea(child: _animatedPageBody()),
           bottomNavigationBar: Container(
@@ -268,6 +337,7 @@ class _MainShellState extends State<MainShell> {
                   final item = _navItems[i];
                   return Expanded(
                     child: GestureDetector(
+                      key: _tourNavKeys[i],
                       behavior: HitTestBehavior.opaque,
                       onTap: () => _selectTab(i),
                       child: AnimatedContainer(
@@ -310,6 +380,16 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
           ),
+        );
+        return Stack(
+          children: [
+            mobileScaffold,
+            if (widget.controller.shouldShowTour && _tab == 0)
+              MorfinTourOverlay(
+                steps: _buildTourSteps(),
+                onFinished: widget.controller.completeTour,
+              ),
+          ],
         );
       },
     );
