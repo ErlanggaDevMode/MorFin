@@ -1,173 +1,184 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:intl/intl.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import '../../models/morfin_models.dart';
 import '../theme/morfin_theme.dart';
 
+/// Lightweight, standards-compliant pure-Dart PDF 1.4 generator for MorFin reports.
+/// Produces crisp A4 financial reports using built-in Type1 Helvetica fonts with zero bloat.
 class ReportExporter {
+  static String _pdfEscape(String input) {
+    final safe = input
+        .replaceAll('•', '-')
+        .replaceAll('·', '-')
+        .replaceAll('—', '-')
+        .replaceAll('–', '-')
+        .replaceAll(RegExp(r'[^\x20-\x7E]'), '');
+    return safe.replaceAll('\\', r'\\').replaceAll('(', r'\(').replaceAll(')', r'\)');
+  }
+
+  static String _rgb(int argb) {
+    final r = ((argb >> 16) & 0xFF) / 255.0;
+    final g = ((argb >> 8) & 0xFF) / 255.0;
+    final b = (argb & 0xFF) / 255.0;
+    return '${r.toStringAsFixed(3)} ${g.toStringAsFixed(3)} ${b.toStringAsFixed(3)}';
+  }
+
   static Future<Uint8List> buildPdfBytes({
     required MorfinUser? user,
     required DashboardPayload? dashboard,
     required MorfinPalette palette,
   }) async {
-    final doc = pw.Document(title: 'Laporan Keuangan MorFin');
-    final accent = PdfColor.fromInt(palette.lime.toARGB32());
-    final dark = PdfColor.fromInt(palette.carbon.toARGB32());
-    final softBg = PdfColor.fromInt(palette.pistachio.toARGB32());
     final summary = dashboard?.summary;
     final txs = dashboard?.transactions ?? [];
     final budgets = dashboard?.budgets ?? [];
     final wallets = dashboard?.wallets ?? [];
     final goals = dashboard?.goals ?? [];
-    final dateLabel = DateFormat('dd MMM yyyy · HH:mm').format(DateTime.now());
+    final dateLabel = DateFormat('dd MMM yyyy - HH:mm').format(DateTime.now());
 
-    doc.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(28),
-        build: (ctx) => [
-          // Header Banner
-          pw.Container(
-            padding: const pw.EdgeInsets.all(18),
-            decoration: pw.BoxDecoration(
-              color: dark,
-              borderRadius: pw.BorderRadius.circular(14),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'MorFin — Laporan Keuangan',
-                      style: pw.TextStyle(color: accent, fontSize: 20, fontWeight: pw.FontWeight.bold),
-                    ),
-                    pw.SizedBox(height: 4),
-                    pw.Text(
-                      '${user?.name ?? "Pengguna MorFin"} (${user?.email ?? "-"})',
-                      style: const pw.TextStyle(color: PdfColors.white, fontSize: 11),
-                    ),
-                  ],
-                ),
-                pw.Text(dateLabel, style: const pw.TextStyle(color: PdfColors.grey400, fontSize: 10)),
-              ],
-            ),
-          ),
-          pw.SizedBox(height: 16),
+    final darkRgb = _rgb(palette.carbon.toARGB32());
+    final accentRgb = _rgb(palette.lime.toARGB32());
+    final softRgb = _rgb(palette.pistachio.toARGB32());
 
-          // KPI Strip
-          pw.Row(
-            children: [
-              _kpiBox('Saldo Bersih', formatIdr(summary?.totalBalance ?? 0), accent, dark),
-              pw.SizedBox(width: 8),
-              _kpiBox('Pemasukan', formatIdr(summary?.totalIncome ?? 0), softBg, dark),
-              pw.SizedBox(width: 8),
-              _kpiBox('Pengeluaran', formatIdr(summary?.totalExpense ?? 0), softBg, dark),
-              pw.SizedBox(width: 8),
-              _kpiBox('Rasio Hemat', '${summary?.savingsRate ?? 0}%', softBg, dark),
-            ],
-          ),
-          pw.SizedBox(height: 18),
+    final s = StringBuffer();
 
-          // Budgets Table
-          if (budgets.isNotEmpty) ...[
-            pw.Text('Ringkasan Anggaran', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: dark)),
-            pw.SizedBox(height: 8),
-            pw.TableHelper.fromTextArray(
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 10),
-              headerDecoration: pw.BoxDecoration(color: dark),
-              cellStyle: const pw.TextStyle(fontSize: 9.5),
-              headers: const ['Anggaran', 'Kategori', 'Periode', 'Terpakai', 'Batas', 'Progres'],
-              data: budgets
-                  .map((b) => [
-                        b.name,
-                        b.category,
-                        b.period,
-                        formatIdr(b.spentAmount),
-                        formatIdr(b.limitAmount),
-                        '${b.usedPercent}%',
-                      ])
-                  .toList(),
-            ),
-            pw.SizedBox(height: 16),
-          ],
+    void rect(double x, double y, double w, double h, String rgb) {
+      s.writeln('$rgb rg ${x.toStringAsFixed(1)} ${y.toStringAsFixed(1)} ${w.toStringAsFixed(1)} ${h.toStringAsFixed(1)} re f');
+    }
 
-          // Wallets & Goals summary
-          if (wallets.isNotEmpty) ...[
-            pw.Text('Kantong Tabungan', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: dark)),
-            pw.SizedBox(height: 8),
-            pw.TableHelper.fromTextArray(
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 10),
-              headerDecoration: pw.BoxDecoration(color: dark),
-              cellStyle: const pw.TextStyle(fontSize: 9.5),
-              headers: const ['Nama Kantong', 'Terkumpul', 'Target', 'Progres'],
-              data: wallets
-                  .map((w) => [w.name, formatIdr(w.currentAmount), formatIdr(w.targetAmount), '${w.progressPercent}%'])
-                  .toList(),
-            ),
-            pw.SizedBox(height: 16),
-          ],
+    void text(double x, double y, String txt, {double size = 10, bool bold = false, String rgb = '0.09 0.10 0.09'}) {
+      final font = bold ? '/F2' : '/F1';
+      s.writeln('BT $rgb rg $font ${size.toStringAsFixed(1)} Tf ${x.toStringAsFixed(1)} ${y.toStringAsFixed(1)} Td (${_pdfEscape(txt)}) Tj ET');
+    }
 
-          if (goals.isNotEmpty) ...[
-            pw.Text('Target Keuangan', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: dark)),
-            pw.SizedBox(height: 8),
-            pw.TableHelper.fromTextArray(
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 10),
-              headerDecoration: pw.BoxDecoration(color: dark),
-              cellStyle: const pw.TextStyle(fontSize: 9.5),
-              headers: const ['Target', 'Status', 'Terkumpul', 'Nominal Target'],
-              data: goals
-                  .map((g) => [g.title, g.status, formatIdr(g.savedAmount), formatIdr(g.targetAmount)])
-                  .toList(),
-            ),
-            pw.SizedBox(height: 16),
-          ],
+    // A4 dimensions: 595 x 842 pt
+    // Header banner
+    rect(36, 738, 523, 68, darkRgb);
+    text(54, 780, 'MorFin - Laporan Keuangan', size: 18, bold: true, rgb: accentRgb);
+    text(54, 758, '${user?.name ?? "Pengguna MorFin"} (${user?.email ?? "-"})', size: 10.5, rgb: '1 1 1');
+    text(420, 778, dateLabel, size: 9.5, rgb: '0.78 0.82 0.78');
 
-          // Transactions Table
-          pw.Text('Riwayat Transaksi (${txs.length})', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: dark)),
-          pw.SizedBox(height: 8),
-          if (txs.isEmpty)
-            pw.Text('Belum ada transaksi tercatat.', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600))
-          else
-            pw.TableHelper.fromTextArray(
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 10),
-              headerDecoration: pw.BoxDecoration(color: dark),
-              cellStyle: const pw.TextStyle(fontSize: 9),
-              headers: const ['Tanggal', 'Keterangan', 'Kategori', 'Jenis', 'Nominal'],
-              data: txs
-                  .take(40)
-                  .map((t) => [
-                        DateFormat('dd/MM/yy HH:mm').format(t.occurredAt),
-                        t.title,
-                        t.category,
-                        t.isIncome ? 'Masuk' : 'Keluar',
-                        '${t.isIncome ? '+' : '-'}${formatIdr(t.amount)}',
-                      ])
-                  .toList(),
-            ),
-        ],
-      ),
-    );
+    // 4 KPI Boxes
+    final kpis = [
+      ('Saldo Bersih', formatIdr(summary?.totalBalance ?? 0), accentRgb),
+      ('Pemasukan', formatIdr(summary?.totalIncome ?? 0), softRgb),
+      ('Pengeluaran', formatIdr(summary?.totalExpense ?? 0), softRgb),
+      ('Rasio Hemat', '${summary?.savingsRate ?? 0}%', softRgb),
+    ];
+    for (int i = 0; i < kpis.length; i++) {
+      final x = 36.0 + i * 133.0;
+      rect(x, 672, 124, 52, kpis[i].$3);
+      text(x + 10, 706, kpis[i].$1, size: 8.5, bold: true, rgb: '0.25 0.28 0.25');
+      text(x + 10, 686, kpis[i].$2, size: 11, bold: true, rgb: '0.09 0.10 0.09');
+    }
 
-    return doc.save();
-  }
+    double y = 646;
 
-  static pw.Widget _kpiBox(String label, String value, PdfColor bg, PdfColor ink) {
-    return pw.Expanded(
-      child: pw.Container(
-        padding: const pw.EdgeInsets.all(10),
-        decoration: pw.BoxDecoration(color: bg, borderRadius: pw.BorderRadius.circular(10)),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(label, style: pw.TextStyle(fontSize: 8.5, color: ink)),
-            pw.SizedBox(height: 4),
-            pw.Text(value, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: ink)),
-          ],
-        ),
-      ),
-    );
+    // Budgets section
+    text(36, y, 'Ringkasan Anggaran (${budgets.length})', size: 12.5, bold: true, rgb: darkRgb);
+    y -= 18;
+    rect(36, y - 4, 523, 18, darkRgb);
+    text(44, y + 1, 'Anggaran', size: 9, bold: true, rgb: '1 1 1');
+    text(215, y + 1, 'Periode', size: 9, bold: true, rgb: '1 1 1');
+    text(295, y + 1, 'Terpakai', size: 9, bold: true, rgb: '1 1 1');
+    text(405, y + 1, 'Batas', size: 9, bold: true, rgb: '1 1 1');
+    text(508, y + 1, 'Pakai', size: 9, bold: true, rgb: '1 1 1');
+    y -= 18;
+
+    for (final b in budgets.take(6)) {
+      if (y < 90) break;
+      rect(36, y - 4, 523, 16, softRgb);
+      text(44, y, b.name.length > 26 ? '${b.name.substring(0, 26)}...' : b.name, size: 9);
+      text(215, y, b.period, size: 9);
+      text(295, y, formatIdr(b.spentAmount), size: 9);
+      text(405, y, formatIdr(b.limitAmount), size: 9);
+      text(508, y, '${b.usedPercent}%', size: 9, bold: true);
+      y -= 18;
+    }
+
+    y -= 12;
+    // Wallets & Goals summary line
+    if (wallets.isNotEmpty && y > 140) {
+      text(36, y, 'Kantong Tabungan (${wallets.length})', size: 12.5, bold: true, rgb: darkRgb);
+      y -= 18;
+      for (final w in wallets.take(4)) {
+        if (y < 90) break;
+        text(44, y, '- ${w.name}: ${formatIdr(w.currentAmount)} / ${formatIdr(w.targetAmount)} (${w.progressPercent}%)', size: 9.5);
+        y -= 15;
+      }
+      y -= 10;
+    }
+
+    if (goals.isNotEmpty && y > 130) {
+      text(36, y, 'Target Keuangan (${goals.length})', size: 12.5, bold: true, rgb: darkRgb);
+      y -= 18;
+      for (final g in goals.take(5)) {
+        if (y < 90) break;
+        text(44, y, '- ${g.title} [${g.status}]: ${formatIdr(g.savedAmount)} / ${formatIdr(g.targetAmount)} (${g.progressPercent}%)', size: 9.5);
+        y -= 15;
+      }
+      y -= 10;
+    }
+
+    // Transactions table
+    if (y > 110) {
+      text(36, y, 'Riwayat Transaksi Terbaru (${txs.length})', size: 12.5, bold: true, rgb: darkRgb);
+      y -= 18;
+      rect(36, y - 4, 523, 18, darkRgb);
+      text(44, y + 1, 'Tanggal', size: 9, bold: true, rgb: '1 1 1');
+      text(135, y + 1, 'Keterangan', size: 9, bold: true, rgb: '1 1 1');
+      text(345, y + 1, 'Kategori', size: 9, bold: true, rgb: '1 1 1');
+      text(445, y + 1, 'Nominal', size: 9, bold: true, rgb: '1 1 1');
+      y -= 18;
+
+      for (final t in txs.take(16)) {
+        if (y < 52) break;
+        final dStr = DateFormat('dd/MM/yy HH:mm').format(t.occurredAt);
+        final title = t.title.length > 32 ? '${t.title.substring(0, 32)}...' : t.title;
+        final amt = '${t.isIncome ? "+" : "-"}${formatIdr(t.amount)}';
+        text(44, y, dStr, size: 8.5);
+        text(135, y, title, size: 8.5);
+        text(345, y, t.category, size: 8.5);
+        text(445, y, amt, size: 8.5, bold: true);
+        y -= 15;
+      }
+    }
+
+    text(36, 28, 'Dibuat otomatis oleh MorFin Personal Finance Tracker', size: 8.5, rgb: '0.45 0.50 0.45');
+
+    final streamBytes = latin1.encode(s.toString());
+
+    // Assemble PDF 1.4 objects with exact xref byte offsets
+    final out = BytesBuilder();
+    void writeStr(String str) => out.add(latin1.encode(str));
+    final offsets = <int>[0];
+
+    writeStr('%PDF-1.4\n');
+
+    void addObj(int num, String body) {
+      offsets.add(out.length);
+      writeStr('$num 0 obj\n$body\nendobj\n');
+    }
+
+    addObj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    addObj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    addObj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>');
+    addObj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    addObj(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+
+    offsets.add(out.length);
+    writeStr('6 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n');
+    out.add(streamBytes);
+    writeStr('\nendstream\nendobj\n');
+
+    final xrefPos = out.length;
+    writeStr('xref\n0 ${offsets.length}\n');
+    writeStr('0000000000 65535 f \n');
+    for (int i = 1; i < offsets.length; i++) {
+      writeStr('${offsets[i].toString().padLeft(10, '0')} 00000 n \n');
+    }
+    writeStr('trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n$xrefPos\n%%EOF\n');
+
+    return out.toBytes();
   }
 }
