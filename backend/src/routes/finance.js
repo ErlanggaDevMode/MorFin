@@ -178,7 +178,45 @@ router.get('/dashboard', async (req, res) => {
     const budgetHealthPercent =
       monthlyLimit > 0 ? Math.max(0, Math.min(100, Math.round((budgetRemaining / monthlyLimit) * 100))) : 100;
 
-    const hematStreakDays = totalBalance >= 0 ? Math.max(1, Math.min(30, txs.length + 20)) : 0;
+    // Hitung streak "Hari Hemat Tanpa Boncos" secara nyata dari riwayat transaksi & batas anggaran
+    const dailyBudgets = budgets.filter((b) => b.period === 'daily');
+    const dailyLimitSum = dailyBudgets.reduce((s, b) => s + b.limitAmount, 0);
+    const effectiveDailyLimit =
+      dailyLimitSum > 0
+        ? dailyLimitSum
+        : monthlyLimit > 0
+          ? Math.round(monthlyLimit / 30)
+          : 0;
+
+    let hematStreakDays = 0;
+    if (txs.length > 0 && totalBalance >= 0) {
+      const expenseByDay = new Map();
+      let earliestTime = Date.now();
+      for (const tx of txs) {
+        const d = new Date(tx.occurredAt);
+        if (!Number.isNaN(d.getTime())) {
+          const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+          if (dayStart.getTime() < earliestTime) earliestTime = dayStart.getTime();
+          const key = `${dayStart.getFullYear()}-${String(dayStart.getMonth() + 1).padStart(2, '0')}-${String(dayStart.getDate()).padStart(2, '0')}`;
+          if (tx.type === 'expense') {
+            expenseByDay.set(key, (expenseByDay.get(key) || 0) + tx.amount);
+          }
+        }
+      }
+
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const firstDayStart = new Date(earliestTime);
+      const cursor = new Date(todayStart);
+
+      while (cursor >= firstDayStart && hematStreakDays < 365) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+        const dayExp = expenseByDay.get(key) || 0;
+        const isBoncos = effectiveDailyLimit > 0 && dayExp > effectiveDailyLimit;
+        if (isBoncos) break;
+        hematStreakDays += 1;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+    }
 
     return res.json({
       summary: {
