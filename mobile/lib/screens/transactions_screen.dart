@@ -18,7 +18,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   late int subTab;
   int? frontWalletIdx;
   String _search = '';
-  String _typeFilter = 'all'; // all | income | expense
+  String _typeFilter = 'all';
 
   @override
   void initState() {
@@ -29,33 +29,88 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   Widget build(BuildContext context) {
     final dash = widget.controller.dashboard;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-      child: Column(
-        children: [
-          Center(child: Text('Transaksi', style: MorfinTheme.display(18))),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: MorfinColors.ink.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 900;
+
+        if (isWide) {
+          // Responsive Desktop Web: Side-by-side Daily Timeline + Categories & Stacked Wallets!
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(28, 16, 28, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _segTab('Harian', 0),
-                _segTab('Kategori', 1),
+                Text('Transaksi & Kantong Tabungan', style: MorfinTheme.display(20)),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 12,
+                        child: _buildDailyTimeline(context, dash?.transactions ?? []),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        flex: 10,
+                        child: _buildCategoryAndWallets(
+                          context,
+                          dash?.summary.categoryBars ?? [],
+                          dash?.wallets ?? [],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
+          );
+        }
+
+        // Mobile Layout: Segmented Pill Switcher (Harian | Kategori) with smooth AnimatedSwitcher
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+          child: Column(
+            children: [
+              Center(child: Text('Transaksi', style: MorfinTheme.display(18))),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: MorfinColors.ink.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  children: [
+                    _segTab('Harian', 0),
+                    _segTab('Kategori', 1),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  switchInCurve: Curves.easeOutCubic,
+                  child: subTab == 0
+                      ? KeyedSubtree(
+                          key: const ValueKey('tx_daily'),
+                          child: _buildDailyTimeline(context, dash?.transactions ?? []),
+                        )
+                      : KeyedSubtree(
+                          key: const ValueKey('tx_cat'),
+                          child: _buildCategoryAndWallets(
+                            context,
+                            dash?.summary.categoryBars ?? [],
+                            dash?.wallets ?? [],
+                          ),
+                        ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
-          Expanded(
-            child: subTab == 0
-                ? _buildDailyTimeline(context, dash?.transactions ?? [])
-                : _buildCategoryAndWallets(context, dash?.summary.categoryBars ?? [], dash?.wallets ?? []),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -64,7 +119,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => subTab = idx),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: active ? MorfinColors.carbon : Colors.transparent,
@@ -96,7 +152,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final timeFmt = DateFormat('dd MMM · HH:mm');
     return Column(
       children: [
-        // Compact Search & Filter Row
         Row(
           children: [
             Expanded(
@@ -126,14 +181,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           ],
         ),
         const SizedBox(height: 12),
-
         Expanded(
           child: txs.isEmpty
               ? Center(
                   child: Text(
                     allTxs.isEmpty
                         ? 'Belum ada transaksi.\nTekan tombol + di bawah untuk mencatat.'
-                        : 'Tidak ada transaksi yang cocok dengan pencarian.',
+                        : 'Tidak ada transaksi yang cocok.',
                     textAlign: TextAlign.center,
                     style: MorfinTheme.body(13, color: MorfinColors.muted),
                   ),
@@ -179,7 +233,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                   Container(
                                     width: 8,
                                     height: 8,
-                                    decoration: const BoxDecoration(color: MorfinColors.carbon, shape: BoxShape.circle),
+                                    decoration: BoxDecoration(color: MorfinColors.carbon, shape: BoxShape.circle),
                                   ),
                                 ],
                               ),
@@ -281,7 +335,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final active = _typeFilter == key;
     return GestureDetector(
       onTap: () => setState(() => _typeFilter = key),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         decoration: BoxDecoration(
           color: active ? MorfinColors.carbon : Colors.white,
@@ -338,7 +393,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       ? Container(
                           width: 18,
                           height: 18,
-                          decoration: const BoxDecoration(color: MorfinColors.lime, shape: BoxShape.circle),
+                          decoration: BoxDecoration(color: MorfinColors.lime, shape: BoxShape.circle),
                           child: const Icon(Icons.check_rounded, size: 12, color: MorfinColors.ink),
                         )
                       : null,
@@ -348,14 +403,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           );
         }),
         const Spacer(),
-
-        // Bottom Dark Sheet with Interactive Stacked Overlapping Wallet Cards + Add Wallet button
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: MorfinColors.carbon,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             children: [
@@ -412,10 +465,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       final isFront = frontWalletIdx == i;
       final topOffset = i * 54.0 - (isFront ? 10.0 : 0.0);
       final colors = i == 0
-          ? [const Color(0xFF88AA3C), const Color(0xFFA4CA52)]
+          ? [MorfinColors.limeDeep, MorfinColors.lime]
           : i == 1
-              ? [const Color(0xFF2D332D), const Color(0xFF48543D)]
-              : [const Color(0xFF749630), const Color(0xFF9CC24B)];
+              ? [const Color(0xFF2D332D), const Color(0xFF444F40)]
+              : [MorfinColors.limeDeep.withValues(alpha: 0.9), MorfinColors.lime];
 
       return AnimatedPositioned(
         duration: const Duration(milliseconds: 240),

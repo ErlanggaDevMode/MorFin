@@ -20,96 +20,106 @@ class GoalsScreen extends StatelessWidget {
     final summary = dash?.summary;
     final goals = dash?.goals ?? [];
 
-    return Container(
-      color: MorfinColors.darkBg,
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
-      child: Column(
-        children: [
-          Center(child: Text('Target', style: MorfinTheme.display(18, color: Colors.white))),
-          const SizedBox(height: 18),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 780;
+        final cols = constraints.maxWidth >= 980 ? 5 : (isWide ? 4 : 3);
 
-          Stack(
-            clipBehavior: Clip.none,
+        return Container(
+          color: MorfinColors.darkBg,
+          padding: EdgeInsets.fromLTRB(isWide ? 28 : 18, 16, isWide ? 28 : 18, 18),
+          child: Column(
             children: [
-              Row(
-                children: [
-                  Expanded(flex: 9, child: _statBox('${summary?.completedGoals ?? 0}', 'Tercapai', false)),
-                  const SizedBox(width: 8),
-                  Expanded(flex: 12, child: _statBox('${summary?.activeGoals ?? 0}', 'Berjalan', true)),
-                  const SizedBox(width: 8),
-                  Expanded(flex: 9, child: _statBox('${summary?.pausedGoals ?? 0}', 'Tertunda', false)),
-                ],
-              ),
-              Positioned(
-                top: -4,
-                right: 78,
-                child: GestureDetector(
-                  onTap: onJumpToWallets,
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: MorfinColors.pistachio,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: MorfinColors.darkBg, width: 4),
+              Center(child: Text('Target Keuangan', style: MorfinTheme.display(19, color: Colors.white))),
+              const SizedBox(height: 18),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(flex: 9, child: _statBox('${summary?.completedGoals ?? 0}', 'Tercapai', false)),
+                        const SizedBox(width: 8),
+                        Expanded(flex: 12, child: _statBox('${summary?.activeGoals ?? 0}', 'Berjalan', true)),
+                        const SizedBox(width: 8),
+                        Expanded(flex: 9, child: _statBox('${summary?.pausedGoals ?? 0}', 'Tertunda', false)),
+                      ],
                     ),
-                    child: const Icon(Icons.north_east_rounded, size: 16, color: MorfinColors.carbon),
+                    Positioned(
+                      top: -4,
+                      right: isWide ? 142 : 78,
+                      child: GestureDetector(
+                        onTap: onJumpToWallets,
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: MorfinColors.pistachio,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: MorfinColors.darkBg, width: 4),
+                          ),
+                          child: Icon(Icons.north_east_rounded, size: 16, color: MorfinColors.carbon),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 26),
+              Expanded(
+                child: goals.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Belum ada target keuangan.\nTekan tombol + di bawah untuk membuat target pertama.',
+                          textAlign: TextAlign.center,
+                          style: MorfinTheme.body(13, color: MorfinColors.mutedLight),
+                        ),
+                      )
+                    : GridView.builder(
+                        itemCount: goals.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: cols,
+                          mainAxisSpacing: 18,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.84,
+                        ),
+                        itemBuilder: (_, idx) {
+                          final g = goals[idx];
+                          return HexagonBadge(
+                            iconKey: g.icon,
+                            unlocked: g.isUnlocked,
+                            label: g.title,
+                            onTap: () => showGoalDetailSheet(context, controller, g),
+                          );
+                        },
+                      ),
+              ),
+              Text(
+                'Ketuk lencana untuk tambah tabungan atau ubah status target',
+                style: MorfinTheme.body(10.5, color: MorfinColors.mutedLight),
+              ),
+              const SizedBox(height: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: MorfinColors.lime,
+                      foregroundColor: MorfinColors.carbon,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: () => showAddGoalSheet(context, controller),
+                    child: const Icon(Icons.add_rounded, size: 26),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 26),
-
-          Expanded(
-            child: goals.isEmpty
-                ? Center(
-                    child: Text(
-                      'Belum ada target keuangan.\nTekan tombol + di bawah untuk membuat target pertama.',
-                      textAlign: TextAlign.center,
-                      style: MorfinTheme.body(13, color: MorfinColors.mutedLight),
-                    ),
-                  )
-                : GridView.builder(
-                    itemCount: goals.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 18,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 0.82,
-                    ),
-                    itemBuilder: (_, idx) {
-                      final g = goals[idx];
-                      return HexagonBadge(
-                        iconKey: g.icon,
-                        unlocked: g.isUnlocked,
-                        label: g.title,
-                        onTap: () => showGoalDetailSheet(context, controller, g),
-                      );
-                    },
-                  ),
-          ),
-          Text(
-            'Ketuk lencana untuk tambah tabungan atau ubah status target',
-            style: MorfinTheme.body(10.5, color: MorfinColors.mutedLight),
-          ),
-          const SizedBox(height: 12),
-
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: MorfinColors.lime,
-                foregroundColor: MorfinColors.carbon,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              onPressed: () => showAddGoalSheet(context, controller),
-              child: const Icon(Icons.add_rounded, size: 26),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

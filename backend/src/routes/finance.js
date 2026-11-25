@@ -103,7 +103,38 @@ router.get('/dashboard', async (req, res) => {
       status: idx < todayIdx ? 'done' : idx === todayIdx ? 'today' : 'upcoming',
     }));
 
-    // Real 6-bar cashflow rhythm from latest transactions (falls back gracefully when empty)
+    // Real 7-day (Sen..Min) weekly cashflow series for the vertical bar chart
+    const indoDays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const diffToMon = now.getDay() === 0 ? 6 : now.getDay() - 1;
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(startOfWeek.getDate() - diffToMon);
+
+    const weeklySeries = indoDays.map((label, idx) => {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + idx);
+      const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return {
+        label,
+        date: ymd,
+        income: 0,
+        expense: 0,
+        isToday: idx === todayIdx,
+      };
+    });
+
+    for (const tx of txs) {
+      const td = new Date(tx.occurredAt);
+      const ymd = `${td.getFullYear()}-${String(td.getMonth() + 1).padStart(2, '0')}-${String(td.getDate()).padStart(2, '0')}`;
+      const bucket = weeklySeries.find((b) => b.date === ymd);
+      if (bucket) {
+        if (tx.type === 'income') bucket.income += tx.amount;
+        else bucket.expense += tx.amount;
+      }
+    }
+
+    // Also keep backward-compatible weeklyCashflowBars
     const maxTx = Math.max(1, ...txs.slice(0, 6).map((t) => t.amount));
     const weeklyCashflowBars =
       txs.length > 0
@@ -118,10 +149,7 @@ router.get('/dashboard', async (req, res) => {
               widthFrac: Number(widthFrac.toFixed(2)),
             };
           })
-        : [
-            { label: 'Pemasukan', isIncome: true, amount: 0, leftFrac: 0.05, widthFrac: 0.25 },
-            { label: 'Pengeluaran', isIncome: false, amount: 0, leftFrac: 0.2, widthFrac: 0.2 },
-          ];
+        : [];
 
     // Category breakdown bars
     const defaultCats = ['Makan', 'Transport', 'Tagihan', 'Cloud AI', 'Edukasi', 'Hiburan', 'Tabungan'];
@@ -162,6 +190,7 @@ router.get('/dashboard', async (req, res) => {
         budgetRemaining,
         budgetHealthPercent,
         weeklyDays,
+        weeklySeries,
         weeklyCashflowBars,
         categoryBars,
         goalCounts,

@@ -2,11 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/app_config.dart';
+import '../core/theme/morfin_theme.dart';
 import '../models/morfin_models.dart';
 import '../services/morfin_api.dart';
 
 class MorfinController extends ChangeNotifier {
   static const _tokenKey = 'morfin_jwt_token_v1';
+  static const _themeKey = 'morfin_theme_palette_v1';
 
   final MorfinApi api;
   MorfinUser? user;
@@ -16,17 +18,24 @@ class MorfinController extends ChangeNotifier {
   bool hasPassedSplash = false;
   String? errorMessage;
   String selectedBudgetPeriod = 'daily';
+  String themeId = 'matcha';
   bool _googleInitialized = false;
 
   MorfinController({MorfinApi? api}) : api = api ?? MorfinApi();
 
   bool get isAuthenticated => user != null;
+  MorfinPalette get palette => MorfinPalettes.byId(themeId);
 
   Future<void> bootstrap() async {
     isLoading = true;
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
+      final savedTheme = prefs.getString(_themeKey);
+      if (savedTheme != null && savedTheme.isNotEmpty) {
+        themeId = savedTheme;
+        MorfinColors.setPalette(themeId);
+      }
       final token = prefs.getString(_tokenKey);
       if (token != null && token.isNotEmpty) {
         api.setToken(token);
@@ -42,6 +51,16 @@ class MorfinController extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> setThemePalette(String id) async {
+    themeId = id;
+    MorfinColors.setPalette(id);
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_themeKey, id);
+    } catch (_) {}
   }
 
   void completeSplash() {
@@ -274,6 +293,7 @@ class MorfinController extends ChangeNotifier {
     required String category,
     required String period,
     required int limitAmount,
+    int? spentAmount,
   }) async {
     await api.updateBudget(
       id,
@@ -281,6 +301,7 @@ class MorfinController extends ChangeNotifier {
       category: category,
       period: period,
       limitAmount: limitAmount,
+      spentAmount: spentAmount,
     );
     await refreshDashboard();
   }

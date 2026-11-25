@@ -200,6 +200,30 @@ class CategoryBarItem {
       );
 }
 
+class WeeklyDayFlow {
+  final String label;
+  final String date;
+  final int income;
+  final int expense;
+  final bool isToday;
+
+  const WeeklyDayFlow({
+    required this.label,
+    required this.date,
+    required this.income,
+    required this.expense,
+    required this.isToday,
+  });
+
+  factory WeeklyDayFlow.fromJson(Map<String, dynamic> j) => WeeklyDayFlow(
+        label: j['label']?.toString() ?? '',
+        date: j['date']?.toString() ?? '',
+        income: (j['income'] as num?)?.toInt() ?? 0,
+        expense: (j['expense'] as num?)?.toInt() ?? 0,
+        isToday: j['isToday'] == true,
+      );
+}
+
 class CashflowBarItem {
   final String label;
   final bool isIncome;
@@ -233,6 +257,7 @@ class DashboardSummary {
   final int budgetRemaining;
   final int budgetHealthPercent;
   final List<WeeklyDayStatus> weeklyDays;
+  final List<WeeklyDayFlow> weeklySeries;
   final List<CashflowBarItem> weeklyCashflowBars;
   final List<CategoryBarItem> categoryBars;
   final int completedGoals;
@@ -248,6 +273,7 @@ class DashboardSummary {
     required this.budgetRemaining,
     required this.budgetHealthPercent,
     required this.weeklyDays,
+    required this.weeklySeries,
     required this.weeklyCashflowBars,
     required this.categoryBars,
     required this.completedGoals,
@@ -267,6 +293,9 @@ class DashboardSummary {
       budgetHealthPercent: (j['budgetHealthPercent'] as num?)?.toInt() ?? 72,
       weeklyDays: ((j['weeklyDays'] as List?) ?? [])
           .map((e) => WeeklyDayStatus.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      weeklySeries: ((j['weeklySeries'] as List?) ?? [])
+          .map((e) => WeeklyDayFlow.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
       weeklyCashflowBars: ((j['weeklyCashflowBars'] as List?) ?? [])
           .map((e) => CashflowBarItem.fromJson(Map<String, dynamic>.from(e as Map)))

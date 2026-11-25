@@ -38,7 +38,7 @@ InputDecoration _fieldDeco(String label, {String? hint}) => InputDecoration(
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: MorfinColors.carbon, width: 1.8),
+        borderSide: BorderSide(color: MorfinColors.carbon, width: 1.8),
       ),
     );
 
@@ -305,7 +305,7 @@ Future<void> showAddTransactionSheet(
                           }
                         },
                   child: saving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: MorfinColors.lime))
+                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: MorfinColors.lime))
                       : Text('Simpan', style: MorfinTheme.display(15, color: MorfinColors.lime)),
                 ),
               ),
@@ -325,6 +325,7 @@ Future<void> showAddBudgetSheet(
   final isEdit = existing != null;
   final nameCtrl = TextEditingController(text: existing?.name ?? '');
   final limitCtrl = TextEditingController(text: existing != null ? existing.limitAmount.toString() : '');
+  final spentCtrl = TextEditingController(text: existing != null ? existing.spentAmount.toString() : '0');
   String category = existing?.category ?? 'Makan';
   String period = existing?.period ?? ctrl.selectedBudgetPeriod;
   bool saving = false;
@@ -375,6 +376,25 @@ Future<void> showAddBudgetSheet(
               TextField(controller: limitCtrl, keyboardType: TextInputType.number, decoration: _fieldDeco('Batas Nominal (Rp)', hint: '500000')),
               const SizedBox(height: 8),
               _quickAmountChips(limitCtrl, () => setState(() {})),
+              if (isEdit) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: spentCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: _fieldDeco('Sudah Terpakai (Rp)'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => setState(() => spentCtrl.text = '0'),
+                      child: Text('Reset 0', style: MorfinTheme.body(12, color: MorfinColors.coral, weight: FontWeight.w700)),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: period,
@@ -418,12 +438,14 @@ Future<void> showAddBudgetSheet(
                           setState(() => saving = true);
                           try {
                             if (isEdit) {
+                              final spent = int.tryParse(spentCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
                               await ctrl.editBudget(
                                 existing.id,
                                 name: nameCtrl.text.trim(),
                                 category: category,
                                 period: period,
                                 limitAmount: limit,
+                                spentAmount: spent,
                               );
                             } else {
                               await ctrl.addBudget(

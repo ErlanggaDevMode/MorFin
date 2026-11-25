@@ -2,15 +2,117 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+class MorfinPalette {
+  final String id;
+  final String name;
+  final String tagline;
+  final Color canvas;
+  final Color lime;
+  final Color limeSoft;
+  final Color limeDeep;
+  final Color pistachio;
+  final Color carbon;
+  final Color darkBg;
+
+  const MorfinPalette({
+    required this.id,
+    required this.name,
+    required this.tagline,
+    required this.canvas,
+    required this.lime,
+    required this.limeSoft,
+    required this.limeDeep,
+    required this.pistachio,
+    required this.carbon,
+    required this.darkBg,
+  });
+}
+
+class MorfinPalettes {
+  static const List<MorfinPalette> all = [
+    MorfinPalette(
+      id: 'matcha',
+      name: 'Matcha Lime',
+      tagline: 'Segar & Ikonik',
+      canvas: Color(0xFF9BC352),
+      lime: Color(0xFFA5CB53),
+      limeSoft: Color(0xFFCDE290),
+      limeDeep: Color(0xFF7B9E34),
+      pistachio: Color(0xFFF2F8E9),
+      carbon: Color(0xFF181A18),
+      darkBg: Color(0xFF101210),
+    ),
+    MorfinPalette(
+      id: 'ocean',
+      name: 'Ocean Mint',
+      tagline: 'Tenang & Modern',
+      canvas: Color(0xFF28B7A6),
+      lime: Color(0xFF2DD4BF),
+      limeSoft: Color(0xFF99F6E4),
+      limeDeep: Color(0xFF0F766E),
+      pistachio: Color(0xFFECFDF9),
+      carbon: Color(0xFF0F1C1E),
+      darkBg: Color(0xFF0A1315),
+    ),
+    MorfinPalette(
+      id: 'sunset',
+      name: 'Sunset Coral',
+      tagline: 'Hangat & Berani',
+      canvas: Color(0xFFE96A7E),
+      lime: Color(0xFFFB7185),
+      limeSoft: Color(0xFFFECDD3),
+      limeDeep: Color(0xFFBE123C),
+      pistachio: Color(0xFFFFF1F3),
+      carbon: Color(0xFF1F1418),
+      darkBg: Color(0xFF140D10),
+    ),
+    MorfinPalette(
+      id: 'lavender',
+      name: 'Royal Violet',
+      tagline: 'Futuristik & Rapi',
+      canvas: Color(0xFF8B6FE8),
+      lime: Color(0xFFA78BFA),
+      limeSoft: Color(0xFFDDD6FE),
+      limeDeep: Color(0xFF6D28D9),
+      pistachio: Color(0xFFF5F3FF),
+      carbon: Color(0xFF171324),
+      darkBg: Color(0xFF0F0C18),
+    ),
+    MorfinPalette(
+      id: 'gold',
+      name: 'Midnight Gold',
+      tagline: 'Elegan & Eksekutif',
+      canvas: Color(0xFFD9A93B),
+      lime: Color(0xFFF5C049),
+      limeSoft: Color(0xFFFDE68A),
+      limeDeep: Color(0xFFB45309),
+      pistachio: Color(0xFFFAF7EE),
+      carbon: Color(0xFF171612),
+      darkBg: Color(0xFF0F0E0B),
+    ),
+  ];
+
+  static MorfinPalette byId(String id) {
+    return all.firstWhere((p) => p.id == id, orElse: () => all.first);
+  }
+}
+
 class MorfinColors {
-  static const Color canvas = Color(0xFF9BC352);
-  static const Color lime = Color(0xFFA5CB53);
-  static const Color limeSoft = Color(0xFFCDE290);
-  static const Color limeDeep = Color(0xFF7B9E34);
-  static const Color pistachio = Color(0xFFF2F8E9);
+  static MorfinPalette active = MorfinPalettes.all.first;
+
+  static void setPalette(String id) {
+    active = MorfinPalettes.byId(id);
+  }
+
+  static Color get canvas => active.canvas;
+  static Color get lime => active.lime;
+  static Color get limeSoft => active.limeSoft;
+  static Color get limeDeep => active.limeDeep;
+  static Color get pistachio => active.pistachio;
+  static Color get carbon => active.carbon;
+  static Color get darkBg => active.darkBg;
+
   static const Color surfaceWhite = Color(0xFFFFFFFF);
-  static const Color carbon = Color(0xFF181A18);
-  static const Color darkBg = Color(0xFF101210);
   static const Color ink = Color(0xFF161916);
   static const Color muted = Color(0xFF768072);
   static const Color mutedLight = Color(0xFF9EA89A);
@@ -20,17 +122,17 @@ class MorfinColors {
 }
 
 class MorfinTheme {
-  static ThemeData build() {
+  static ThemeData build(MorfinPalette palette) {
     final base = ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: MorfinColors.pistachio,
+      scaffoldBackgroundColor: palette.pistachio,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: MorfinColors.lime,
-        primary: MorfinColors.lime,
+        seedColor: palette.lime,
+        primary: palette.lime,
         onPrimary: MorfinColors.ink,
-        secondary: MorfinColors.carbon,
-        surface: MorfinColors.pistachio,
+        secondary: palette.carbon,
+        surface: palette.pistachio,
       ),
     );
     return base.copyWith(

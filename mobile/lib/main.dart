@@ -38,62 +38,42 @@ class _MorfinAppState extends State<MorfinApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MorFin — Finance Tracker',
-      debugShowCheckedModeBanner: false,
-      theme: MorfinTheme.build(),
-      builder: (context, child) {
-        // On wide desktop/web viewports, frame MorFin inside a sleek Matcha-Lime mobile halo matching KASU!
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth <= 520) return child ?? const SizedBox.shrink();
-            final frameHeight = (constraints.maxHeight - 32).clamp(360.0, 820.0);
-            return Container(
-              color: MorfinColors.canvas,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Container(
-                width: 404,
-                height: frameHeight,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.34),
-                  borderRadius: BorderRadius.circular(46),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF283A0C).withValues(alpha: 0.2),
-                      blurRadius: 44,
-                      offset: const Offset(0, 22),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(36),
-                  child: child,
-                ),
-              ),
-            );
-          },
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final palette = _ctrl.palette;
+        return MaterialApp(
+          title: 'MorFin — Finance Tracker',
+          debugShowCheckedModeBanner: false,
+          theme: MorfinTheme.build(palette),
+          home: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 340),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, anim) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0, 0.03),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
+              return FadeTransition(
+                opacity: anim,
+                child: SlideTransition(position: slide, child: child),
+              );
+            },
+            child: !_ctrl.isInitialized
+                ? Scaffold(
+                    key: const ValueKey('morfin_boot'),
+                    backgroundColor: Colors.white,
+                    body: Center(child: CircularProgressIndicator(color: MorfinColors.carbon)),
+                  )
+                : !_ctrl.hasPassedSplash
+                    ? SplashScreen(key: const ValueKey('morfin_splash'), onStart: _ctrl.completeSplash)
+                    : !_ctrl.isAuthenticated
+                        ? AuthScreen(key: const ValueKey('morfin_auth'), controller: _ctrl)
+                        : MainShell(key: ValueKey('morfin_shell_${_ctrl.themeId}'), controller: _ctrl),
+          ),
         );
       },
-      home: AnimatedBuilder(
-        animation: _ctrl,
-        builder: (context, _) {
-          if (!_ctrl.isInitialized) {
-            return const Scaffold(
-              backgroundColor: Colors.white,
-              body: Center(child: CircularProgressIndicator(color: MorfinColors.carbon)),
-            );
-          }
-          if (!_ctrl.hasPassedSplash) {
-            return SplashScreen(onStart: _ctrl.completeSplash);
-          }
-          if (!_ctrl.isAuthenticated) {
-            return AuthScreen(controller: _ctrl);
-          }
-          return MainShell(controller: _ctrl);
-        },
-      ),
     );
   }
 }
