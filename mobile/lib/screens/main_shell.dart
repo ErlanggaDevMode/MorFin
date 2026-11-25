@@ -3,6 +3,7 @@ import '../core/theme/morfin_theme.dart';
 import '../state/morfin_controller.dart';
 import '../widgets/add_sheets.dart';
 import 'budget_screen.dart';
+import 'duolingo_splash_screen.dart';
 import 'goals_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
@@ -116,20 +117,16 @@ class _MainShellState extends State<MainShell> {
                     children: [
                       Row(
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: MorfinColors.lime,
-                              borderRadius: BorderRadius.circular(13),
-                            ),
-                            child: Icon(Icons.account_balance_wallet_rounded, color: MorfinColors.ink, size: 21),
+                          MorfinLogoBox(
+                            size: 40,
+                            boxColor: MorfinColors.lime,
+                            strokeColor: MorfinColors.carbon,
                           ),
                           const SizedBox(width: 11),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('MorFin', style: MorfinTheme.display(21, color: Colors.white)),
+                              Text('morfin', style: MorfinTheme.body(21, color: Colors.white, weight: FontWeight.w800)),
                               Text('Finance Tracker', style: MorfinTheme.body(10.5, color: MorfinColors.mutedLight)),
                             ],
                           ),

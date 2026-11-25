@@ -19,7 +19,7 @@ class MorfinApp extends StatefulWidget {
   const MorfinApp({
     super.key,
     this.controller,
-    this.minSplashDuration = const Duration(milliseconds: 1750),
+    this.minSplashDuration = const Duration(milliseconds: 2450),
   });
 
   @override

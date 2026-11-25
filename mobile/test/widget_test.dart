@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:morfin/main.dart';
+import 'package:morfin/screens/duolingo_splash_screen.dart';
 import 'package:morfin/state/morfin_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,9 +18,9 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 120));
 
-    // Duolingo-style loading splash visible initially
-    expect(find.text('MorFin'), findsOneWidget);
-    expect(find.text('SMART FINANCE TRACKER'), findsOneWidget);
+    // Kinetic MorFin loading splash visible initially
+    expect(find.text('morfin'), findsOneWidget);
+    expect(find.byType(MorfinLogoBox), findsOneWidget);
 
     // Advance past minimum loading splash duration
     await tester.pump(const Duration(milliseconds: 700));
