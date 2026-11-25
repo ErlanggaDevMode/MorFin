@@ -5,14 +5,27 @@ import 'package:morfin/state/morfin_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('MorFin renders Splash -> Auth (Email + Google OAuth) flow cleanly', (tester) async {
+  testWidgets('MorFin renders Duolingo Loading Splash -> Welcome -> Auth cleanly', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final ctrl = MorfinController();
 
-    await tester.pumpWidget(MorfinApp(controller: ctrl));
+    await tester.pumpWidget(
+      MorfinApp(
+        controller: ctrl,
+        minSplashDuration: const Duration(milliseconds: 600),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+
+    // Duolingo-style loading splash visible initially
+    expect(find.text('MorFin'), findsOneWidget);
+    expect(find.text('SMART FINANCE TRACKER'), findsOneWidget);
+
+    // Advance past minimum loading splash duration
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    // Splash screen visible
+    // Welcome screen visible
     expect(find.text('MorFin'), findsOneWidget);
     expect(find.text("Let's Start"), findsOneWidget);
 

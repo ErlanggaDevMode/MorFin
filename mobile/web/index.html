@@ -1,42 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="MorFin — Neo-Flat Personal Finance Tracker">
+  <meta name="theme-color" content="#9BC352">
   <meta name="google-signin-client_id" content="669965320780-k4a7kv6m2080a3br9lsna91rcvgoo0bt.apps.googleusercontent.com">
-
-  <!--
-    Uncomment the tag below to lay the app out underneath the parts of the
-    screen that the device obstructs, such as a display cutout, the rounded
-    corners of the screen, or a home indicator.
-
-    Without it, the browser keeps the app clear of them, and `SafeArea` and
-    `MediaQuery.paddingOf` report no padding. With it, the app covers the whole
-    screen, and it is up to the app to keep its own content out of the way,
-    which is what `SafeArea` is for.
-  -->
-  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> -->
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="morfin">
+  <meta name="apple-mobile-web-app-title" content="MorFin">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
@@ -44,16 +21,277 @@
 
   <title>MorFin — Finance Tracker</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #9BC352;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    #morfin-preloader {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 48px 28px 42px;
+      background: radial-gradient(circle at 50% 40%, #B2D669 0%, #9BC352 56%, #85AC3D 100%);
+      transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1), transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #morfin-preloader.hide {
+      opacity: 0;
+      transform: scale(1.03);
+      pointer-events: none;
+    }
+
+    .mori-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .mori-glow {
+      position: absolute;
+      width: 184px;
+      height: 184px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .mori-svg {
+      width: 168px;
+      height: 168px;
+      position: relative;
+      z-index: 2;
+      transform-origin: 50% 92%;
+      animation: moriHop 1.15s infinite ease-in-out;
+    }
+
+    .mori-shadow {
+      width: 104px;
+      height: 16px;
+      border-radius: 999px;
+      background: rgba(24, 26, 24, 0.20);
+      margin-top: -10px;
+      animation: moriShadow 1.15s infinite ease-in-out;
+    }
+
+    .mori-eyes {
+      transform-origin: 100px 92px;
+      animation: moriBlink 2.8s infinite;
+    }
+
+    .mori-wing-l {
+      transform-origin: 48px 104px;
+      animation: wingLeft 1.15s infinite ease-in-out;
+    }
+
+    .mori-wing-r {
+      transform-origin: 152px 104px;
+      animation: wingRight 1.15s infinite ease-in-out;
+    }
+
+    .mori-coin {
+      animation: coinFloat 1.15s infinite ease-in-out;
+    }
+
+    .preloader-bottom {
+      width: 100%;
+      max-width: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 14px;
+      padding: 2.5px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.16);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 22%;
+      border-radius: 999px;
+      background: #FFFFFF;
+      position: relative;
+      animation: barPulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .bar-fill::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      top: 1.5px;
+      height: 3.5px;
+      border-radius: 999px;
+      background: rgba(205, 226, 144, 0.6);
+    }
+
+    .preloader-status {
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.1px;
+    }
+
+    .brand-lockup {
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    .brand-name {
+      color: #FFFFFF;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      line-height: 1.05;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+    }
+
+    .brand-sub {
+      margin-top: 3px;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 2.2px;
+    }
+
+    @keyframes moriHop {
+      0%, 100% { transform: translateY(0) scaleX(1) scaleY(1); }
+      12% { transform: translateY(5px) scaleX(1.09) scaleY(0.90); }
+      38% { transform: translateY(-28px) scaleX(0.94) scaleY(1.08) rotate(-3deg); }
+      62% { transform: translateY(5px) scaleX(1.09) scaleY(0.90); }
+      78% { transform: translateY(-3px) scaleX(0.99) scaleY(1.02); }
+    }
+
+    @keyframes moriShadow {
+      0%, 100% { transform: scaleX(1); opacity: 0.22; }
+      12% { transform: scaleX(1.10); opacity: 0.26; }
+      38% { transform: scaleX(0.70); opacity: 0.10; }
+      62% { transform: scaleX(1.10); opacity: 0.25; }
+    }
+
+    @keyframes moriBlink {
+      0%, 86%, 100% { transform: scaleY(1); }
+      90% { transform: scaleY(0.08); }
+    }
+
+    @keyframes wingLeft {
+      0%, 100% { transform: rotate(0deg); }
+      38% { transform: rotate(-28deg); }
+      62% { transform: rotate(10deg); }
+    }
+
+    @keyframes wingRight {
+      0%, 100% { transform: rotate(0deg); }
+      38% { transform: rotate(28deg); }
+      62% { transform: rotate(-10deg); }
+    }
+
+    @keyframes coinFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    @keyframes barPulse {
+      0% { width: 14%; }
+      35% { width: 48%; }
+      75% { width: 78%; }
+      100% { width: 92%; }
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="morfin-preloader" aria-label="Memuat MorFin">
+    <div class="mori-stage">
+      <div class="mori-glow"></div>
+      <svg class="mori-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Feet -->
+        <rect x="57" y="172" width="32" height="14" rx="7" fill="#F5A623"/>
+        <rect x="111" y="172" width="32" height="14" rx="7" fill="#F5A623"/>
+        <!-- Wings -->
+        <g class="mori-wing-l">
+          <rect x="20" y="88" width="36" height="58" rx="18" transform="rotate(18 38 117)" fill="#7B9E34"/>
+        </g>
+        <g class="mori-wing-r">
+          <rect x="144" y="88" width="36" height="58" rx="18" transform="rotate(-18 162 117)" fill="#7B9E34"/>
+        </g>
+        <!-- Tuft -->
+        <path d="M86 42 Q78 16 98 25 Q110 8 115 34 Q127 22 123 45 Z" fill="#BAD977"/>
+        <!-- Body shadow rim + body -->
+        <rect x="34" y="42" width="132" height="140" rx="64" fill="#7B9E34"/>
+        <rect x="34" y="38" width="132" height="140" rx="64" fill="#BAD977"/>
+        <!-- Belly -->
+        <ellipse cx="100" cy="140" rx="43" ry="31" fill="#F2F8E9"/>
+        <!-- Eye rings -->
+        <circle cx="71" cy="91" r="32" fill="rgba(255,255,255,0.25)"/>
+        <circle cx="129" cy="91" r="32" fill="rgba(255,255,255,0.25)"/>
+        <!-- Eyes -->
+        <g class="mori-eyes">
+          <circle cx="71" cy="91" r="26" fill="#FFFFFF"/>
+          <circle cx="129" cy="91" r="26" fill="#FFFFFF"/>
+          <circle cx="73" cy="92" r="14.5" fill="#161916"/>
+          <circle cx="127" cy="92" r="14.5" fill="#161916"/>
+          <circle cx="68" cy="87" r="4.5" fill="#FFFFFF"/>
+          <circle cx="122" cy="87" r="4.5" fill="#FFFFFF"/>
+          <circle cx="78" cy="96" r="2.2" fill="#FFFFFF"/>
+          <circle cx="132" cy="96" r="2.2" fill="#FFFFFF"/>
+        </g>
+        <!-- Rosy cheeks -->
+        <ellipse cx="56" cy="115" rx="10" ry="5.5" fill="rgba(255,138,107,0.38)"/>
+        <ellipse cx="144" cy="115" rx="10" ry="5.5" fill="rgba(255,138,107,0.38)"/>
+        <!-- Beak -->
+        <path d="M85 110 Q100 98 115 110 Q100 124 85 110 Z" fill="#F5C049"/>
+        <path d="M90 113 Q100 126 110 113 Z" fill="#E78B28"/>
+        <!-- Floating golden coin -->
+        <g class="mori-coin">
+          <circle cx="166" cy="39" r="18" fill="#D9931E"/>
+          <circle cx="166" cy="36" r="18" fill="#FCD34D"/>
+          <circle cx="166" cy="36" r="12.5" stroke="#F59E0B" stroke-width="2.5" fill="none"/>
+        </g>
+        <!-- Sparkle -->
+        <path d="M32 34 Q32 45 43 45 Q32 45 32 56 Q32 45 21 45 Q32 45 32 34 Z" fill="rgba(255,255,255,0.9)"/>
+      </svg>
+      <div class="mori-shadow"></div>
+    </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+    <div class="preloader-bottom">
+      <div class="bar-track">
+        <div class="bar-fill"></div>
+      </div>
+      <div class="preloader-status">Menyiapkan MorFin...</div>
+      <div class="brand-lockup">
+        <div class="brand-name">MorFin</div>
+        <div class="brand-sub">SMART FINANCE TRACKER</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('morfin-preloader');
+      if (el) {
+        el.classList.add('hide');
+        setTimeout(function () { el.remove(); }, 460);
+      }
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
