@@ -207,12 +207,12 @@ class _MainShellState extends State<MainShell> {
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: MorfinColors.lime,
-                            foregroundColor: MorfinColors.ink,
+                            foregroundColor: MorfinColors.onLime,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
                           onPressed: () => showAddTransactionSheet(context, widget.controller),
                           icon: const Icon(Icons.add_rounded, size: 19),
-                          label: Text('Catat Transaksi', style: MorfinTheme.display(13)),
+                          label: Text('Catat Transaksi', style: MorfinTheme.display(13, color: MorfinColors.onLime)),
                         ),
                       ),
                       const SizedBox(height: 22),
@@ -234,13 +234,13 @@ class _MainShellState extends State<MainShell> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(item.$1, size: 20, color: active ? MorfinColors.ink : Colors.white70),
+                                  Icon(item.$1, size: 20, color: active ? MorfinColors.onLime : Colors.white70),
                                   const SizedBox(width: 12),
                                   Text(
                                     item.$2,
                                     style: MorfinTheme.body(
                                       13.5,
-                                      color: active ? MorfinColors.ink : Colors.white70,
+                                      color: active ? MorfinColors.onLime : Colors.white70,
                                       weight: active ? FontWeight.w800 : FontWeight.w600,
                                     ),
                                   ),
@@ -267,7 +267,7 @@ class _MainShellState extends State<MainShell> {
                                 backgroundColor: MorfinColors.lime,
                                 child: Text(
                                   (user?.name.isNotEmpty == true ? user!.name[0] : 'M').toUpperCase(),
-                                  style: MorfinTheme.display(14, color: MorfinColors.ink),
+                                  style: MorfinTheme.display(14, color: MorfinColors.onLime),
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -363,7 +363,7 @@ class _MainShellState extends State<MainShell> {
                             Icon(
                               item.$1,
                               size: 20,
-                              color: active ? MorfinColors.ink : Colors.white70,
+                              color: active ? MorfinColors.onLime : Colors.white70,
                             ),
                             const SizedBox(height: 2),
                             FittedBox(
@@ -373,7 +373,7 @@ class _MainShellState extends State<MainShell> {
                                 maxLines: 1,
                                 style: MorfinTheme.body(
                                   10,
-                                  color: active ? MorfinColors.ink : Colors.white70,
+                                  color: active ? MorfinColors.onLime : Colors.white70,
                                   weight: active ? FontWeight.w800 : FontWeight.w600,
                                 ),
                               ),

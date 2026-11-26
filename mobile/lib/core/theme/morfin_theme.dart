@@ -99,22 +99,41 @@ class MorfinPalettes {
 
 class MorfinColors {
   static MorfinPalette active = MorfinPalettes.all.first;
+  static bool isDark = false;
 
   static void setPalette(String id) {
     active = MorfinPalettes.byId(id);
+  }
+
+  static void setDark(bool dark) {
+    isDark = dark;
   }
 
   static Color get canvas => active.canvas;
   static Color get lime => active.lime;
   static Color get limeSoft => active.limeSoft;
   static Color get limeDeep => active.limeDeep;
-  static Color get pistachio => active.pistachio;
   static Color get carbon => active.carbon;
   static Color get darkBg => active.darkBg;
 
-  static const Color surfaceWhite = Color(0xFFFFFFFF);
-  static const Color ink = Color(0xFF161916);
-  static const Color muted = Color(0xFF768072);
+  /// Main page background: soft pastel in light mode, rich dark canvas in dark mode
+  static Color get pistachio => isDark ? active.darkBg : active.pistachio;
+
+  /// Elevated card & surface background
+  static Color get surfaceWhite => isDark ? const Color(0xFF1B1F1C) : const Color(0xFFFFFFFF);
+
+  /// Nested subtle fill inside cards (inputs, pills, drafts)
+  static Color get surfaceAlt => isDark ? const Color(0xFF252B26) : active.pistachio;
+
+  /// Primary text color adapting to light/dark surfaces
+  static Color get ink => isDark ? const Color(0xFFF2F5F0) : const Color(0xFF161916);
+
+  /// Always-dark ink for text/icons rendered ON TOP of bright lime accent fills
+  static const Color onLime = Color(0xFF161916);
+
+  /// Secondary text color
+  static Color get muted => isDark ? const Color(0xFFA0AA9C) : const Color(0xFF768072);
+
   static const Color mutedLight = Color(0xFF9EA89A);
   static const Color coral = Color(0xFFE75C34);
   static const Color coralSoft = Color(0xFFFF8A6B);
@@ -122,41 +141,50 @@ class MorfinColors {
 }
 
 class MorfinTheme {
-  static ThemeData build(MorfinPalette palette) {
+  static ThemeData build(MorfinPalette palette, {bool dark = false}) {
+    final bg = dark ? palette.darkBg : palette.pistachio;
+    final fg = dark ? const Color(0xFFF2F5F0) : const Color(0xFF161916);
     final base = ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: palette.pistachio,
+      brightness: dark ? Brightness.dark : Brightness.light,
+      scaffoldBackgroundColor: bg,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       colorScheme: ColorScheme.fromSeed(
         seedColor: palette.lime,
+        brightness: dark ? Brightness.dark : Brightness.light,
         primary: palette.lime,
-        onPrimary: MorfinColors.ink,
+        onPrimary: MorfinColors.onLime,
         secondary: palette.carbon,
-        surface: palette.pistachio,
+        surface: dark ? const Color(0xFF1B1F1C) : palette.pistachio,
       ),
     );
     return base.copyWith(
       textTheme: base.textTheme.apply(
-        bodyColor: MorfinColors.ink,
-        displayColor: MorfinColors.ink,
+        bodyColor: fg,
+        displayColor: fg,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: dark ? const Color(0xFF1B1F1C) : Colors.white,
+        titleTextStyle: display(18, color: fg),
+        contentTextStyle: body(13.5, color: dark ? const Color(0xFFA0AA9C) : const Color(0xFF768072)),
       ),
     );
   }
 
-  static TextStyle display(double size, {Color color = MorfinColors.ink, FontWeight weight = FontWeight.w700}) {
+  static TextStyle display(double size, {Color? color, FontWeight weight = FontWeight.w700}) {
     return GoogleFonts.spaceGrotesk(
       fontSize: size,
       fontWeight: weight,
-      color: color,
+      color: color ?? MorfinColors.ink,
       letterSpacing: -0.02 * size,
     );
   }
 
-  static TextStyle body(double size, {Color color = MorfinColors.ink, FontWeight weight = FontWeight.w500}) {
+  static TextStyle body(double size, {Color? color, FontWeight weight = FontWeight.w500}) {
     return GoogleFonts.plusJakartaSans(
       fontSize: size,
       fontWeight: weight,
-      color: color,
+      color: color ?? MorfinColors.ink,
     );
   }
 }

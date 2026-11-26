@@ -217,4 +217,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Cari transaksi...'), findsOneWidget);
   });
+
+  test('MorfinController defaults to system ThemeMode and persists dark/light changes', () async {
+    SharedPreferences.setMockInitialValues({});
+    final ctrl = MorfinController();
+    expect(ctrl.themeMode, ThemeMode.system);
+    expect(ctrl.themeModeKey, 'system');
+
+    await ctrl.setThemeMode('dark');
+    expect(ctrl.themeMode, ThemeMode.dark);
+    expect(ctrl.themeModeKey, 'dark');
+
+    await ctrl.setThemeMode('light');
+    expect(ctrl.themeMode, ThemeMode.light);
+    expect(ctrl.themeModeKey, 'light');
+  });
 }

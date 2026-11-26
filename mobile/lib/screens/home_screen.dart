@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Center(
                     child: Text(
                       (user?.name.isNotEmpty == true ? user!.name[0] : 'M').toUpperCase(),
-                      style: MorfinTheme.display(18, color: MorfinColors.ink),
+                      style: MorfinTheme.display(18, color: MorfinColors.onLime),
                     ),
                   ),
                 ),
@@ -151,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: MorfinColors.surfaceWhite,
             borderRadius: BorderRadius.circular(999),
             boxShadow: [
               BoxShadow(color: MorfinColors.ink.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 3)),
@@ -227,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         margin: const EdgeInsets.symmetric(horizontal: 2.5),
                         padding: const EdgeInsets.symmetric(vertical: 7),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: MorfinColors.surfaceWhite,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(
@@ -241,20 +241,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? MorfinColors.lime
                                     : isToday
                                         ? Colors.transparent
-                                        : const Color(0xFFE3E8DF),
-                                border: isToday ? Border.all(color: MorfinColors.carbon, width: 2) : null,
+                                        : MorfinColors.surfaceAlt,
+                                border: isToday ? Border.all(color: MorfinColors.ink, width: 2) : null,
                               ),
                               child: Center(
                                 child: isToday
                                     ? Container(
                                         width: 6,
                                         height: 6,
-                                        decoration: BoxDecoration(color: MorfinColors.carbon, shape: BoxShape.circle),
+                                        decoration: BoxDecoration(color: MorfinColors.ink, shape: BoxShape.circle),
                                       )
                                     : Icon(
                                         Icons.check_rounded,
                                         size: 13,
-                                        color: isDone ? Colors.white : MorfinColors.mutedLight,
+                                        color: isDone ? MorfinColors.onLime : MorfinColors.mutedLight,
                                       ),
                               ),
                             ),
@@ -298,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 30,
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: MorfinColors.surfaceWhite,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: AnimatedAlign(
@@ -350,11 +350,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Anggaran', style: MorfinTheme.display(15)),
-                          Text('Sisa $budgetRem', style: MorfinTheme.body(11, color: MorfinColors.ink.withValues(alpha: 0.75), weight: FontWeight.w700)),
+                          Text('Anggaran', style: MorfinTheme.display(15, color: MorfinColors.onLime)),
+                          Text('Sisa $budgetRem', style: MorfinTheme.body(11, color: MorfinColors.onLime.withValues(alpha: 0.78), weight: FontWeight.w700)),
                         ],
                       ),
-                      Icon(Icons.edit_outlined, size: 16, color: MorfinColors.ink.withValues(alpha: 0.7)),
+                      Icon(Icons.edit_outlined, size: 16, color: MorfinColors.onLime.withValues(alpha: 0.72)),
                     ],
                   ),
                   Container(
@@ -374,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: MorfinColors.gold,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Center(child: Text('Rp', style: MorfinTheme.display(12))),
+                          child: Center(child: Text('Rp', style: MorfinTheme.display(12, color: MorfinColors.onLime))),
                         ),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -410,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${summary?.hematStreakDays ?? 25}', style: MorfinTheme.display(36, color: Colors.white)),
+                        Text('${summary?.hematStreakDays ?? 0}', style: MorfinTheme.display(36, color: Colors.white)),
                         const SizedBox(height: 2),
                         Text(
                           'Hari Hemat\nTanpa Boncos',
@@ -464,7 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MorfinColors.surfaceWhite,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(color: MorfinColors.ink.withValues(alpha: 0.04), blurRadius: 16, offset: const Offset(0, 6)),
@@ -680,7 +680,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: MorfinColors.surfaceWhite,
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Row(
@@ -722,7 +722,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: MorfinColors.surfaceWhite,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: MorfinColors.ink.withValues(alpha: 0.08)),
               ),
@@ -770,12 +770,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? MorfinColors.carbon
                     : isLime
                         ? MorfinColors.lime
-                        : Colors.white;
-                final fg = isDark ? Colors.white : MorfinColors.ink;
+                        : MorfinColors.surfaceWhite;
+                final fg = isDark
+                    ? Colors.white
+                    : isLime
+                        ? MorfinColors.onLime
+                        : MorfinColors.ink;
                 final sub = isDark
                     ? MorfinColors.mutedLight
                     : isLime
-                        ? MorfinColors.ink.withValues(alpha: 0.72)
+                        ? MorfinColors.onLime.withValues(alpha: 0.72)
                         : MorfinColors.muted;
                 final barTrack = isDark
                     ? Colors.white.withValues(alpha: 0.14)
@@ -888,7 +892,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MorfinColors.surfaceWhite,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(

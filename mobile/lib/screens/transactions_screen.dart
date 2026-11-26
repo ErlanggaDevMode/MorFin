@@ -301,11 +301,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 style: MorfinTheme.body(12.5),
                 decoration: InputDecoration(
                   hintText: 'Cari transaksi...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 18, color: MorfinColors.muted),
+                  prefixIcon: Icon(Icons.search_rounded, size: 18, color: MorfinColors.muted),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: MorfinColors.surfaceWhite,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -498,7 +498,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         decoration: BoxDecoration(
-          color: active ? MorfinColors.carbon : Colors.white,
+          color: active ? MorfinColors.carbon : MorfinColors.surfaceWhite,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
@@ -553,7 +553,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           width: 18,
                           height: 18,
                           decoration: BoxDecoration(color: MorfinColors.lime, shape: BoxShape.circle),
-                          child: const Icon(Icons.check_rounded, size: 12, color: MorfinColors.ink),
+                          child: const Icon(Icons.check_rounded, size: 12, color: MorfinColors.onLime),
                         )
                       : null,
                 ),
@@ -583,7 +583,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         color: MorfinColors.lime,
                         borderRadius: BorderRadius.circular(99),
                       ),
-                      child: Text('+ Kantong', style: MorfinTheme.body(11, color: MorfinColors.ink, weight: FontWeight.w800)),
+                      child: Text('+ Kantong', style: MorfinTheme.body(11, color: MorfinColors.onLime, weight: FontWeight.w800)),
                     ),
                   ),
                 ],

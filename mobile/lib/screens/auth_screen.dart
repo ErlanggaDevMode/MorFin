@@ -44,7 +44,7 @@ class _AuthScreenState extends State<AuthScreen> {
         prefixIcon: Icon(icon, size: 20, color: MorfinColors.muted),
         suffixIcon: suffix,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: MorfinColors.surfaceWhite,
         labelStyle: MorfinTheme.body(13, color: MorfinColors.muted, weight: FontWeight.w600),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -270,7 +270,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     height: 52,
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: MorfinColors.surfaceWhite,
                         foregroundColor: MorfinColors.ink,
                         side: BorderSide(color: MorfinColors.ink.withValues(alpha: 0.16), width: 1.4),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

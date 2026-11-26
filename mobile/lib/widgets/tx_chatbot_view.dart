@@ -442,7 +442,7 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: MorfinColors.surfaceWhite,
                   borderRadius: BorderRadius.circular(99),
                   border: Border.all(color: MorfinColors.ink.withValues(alpha: 0.08)),
                 ),
@@ -527,7 +527,7 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: MorfinColors.surfaceWhite,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
@@ -549,10 +549,10 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: MorfinColors.pistachio,
+                        color: MorfinColors.surfaceAlt,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.document_scanner_rounded, size: 19, color: MorfinColors.carbon),
+                      child: Icon(Icons.document_scanner_rounded, size: 19, color: MorfinColors.ink),
                     ),
                   ),
                 ),
@@ -585,13 +585,13 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: _isListening ? MorfinColors.coral : MorfinColors.pistachio,
+                        color: _isListening ? MorfinColors.coral : MorfinColors.surfaceAlt,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         _isListening ? Icons.stop_rounded : Icons.mic_rounded,
                         size: 20,
-                        color: _isListening ? Colors.white : MorfinColors.carbon,
+                        color: _isListening ? Colors.white : MorfinColors.ink,
                       ),
                     ),
                   ),
@@ -627,7 +627,7 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
         margin: const EdgeInsets.only(bottom: 10, right: 48),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: MorfinColors.surfaceWhite,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(18),
             topRight: Radius.circular(18),
@@ -665,7 +665,7 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
           ),
           padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
-            color: isUser ? MorfinColors.carbon : Colors.white,
+            color: isUser ? MorfinColors.carbon : MorfinColors.surfaceWhite,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(18),
               topRight: const Radius.circular(18),
@@ -697,7 +697,7 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
                           color: MorfinColors.lime,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Icon(Icons.auto_awesome_rounded, size: 11, color: MorfinColors.ink),
+                        child: Icon(Icons.auto_awesome_rounded, size: 11, color: MorfinColors.onLime),
                       ),
                       const SizedBox(width: 6),
                       Text('MorFin AI', style: MorfinTheme.display(11.5, color: MorfinColors.ink)),
@@ -736,7 +736,7 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
                     margin: EdgeInsets.only(top: i == 0 ? 0 : 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: MorfinColors.pistachio,
+                      color: MorfinColors.surfaceAlt,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSaved

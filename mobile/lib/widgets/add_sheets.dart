@@ -29,7 +29,7 @@ InputDecoration _fieldDeco(String label, {String? hint}) => InputDecoration(
       labelText: label,
       hintText: hint,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: MorfinColors.surfaceWhite,
       labelStyle: MorfinTheme.body(13, color: MorfinColors.muted, weight: FontWeight.w600),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -69,7 +69,7 @@ Widget _quickAmountChips(TextEditingController ctrl, VoidCallback refresh) {
     children: presets.map((p) {
       return ActionChip(
         label: Text(p.$2, style: MorfinTheme.body(11.5, weight: FontWeight.w700)),
-        backgroundColor: Colors.white,
+        backgroundColor: MorfinColors.surfaceWhite,
         side: BorderSide(color: MorfinColors.ink.withValues(alpha: 0.12)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
         onPressed: () {
@@ -190,7 +190,7 @@ Future<bool?> showAddTransactionSheet(
                       label: const Center(child: Text('Pemasukan (+)')),
                       selected: type == 'income',
                       selectedColor: MorfinColors.lime,
-                      labelStyle: const TextStyle(color: MorfinColors.ink, fontWeight: FontWeight.w700),
+                      labelStyle: TextStyle(color: type == 'income' ? MorfinColors.onLime : MorfinColors.ink, fontWeight: FontWeight.w700),
                       onSelected: (_) => setState(() {
                         type = 'income';
                         category = 'Gaji / Proyek';
@@ -261,13 +261,13 @@ Future<bool?> showAddTransactionSheet(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: MorfinColors.surfaceWhite,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: MorfinColors.ink.withValues(alpha: 0.14)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today_rounded, size: 17, color: MorfinColors.muted),
+                        Icon(Icons.calendar_today_rounded, size: 17, color: MorfinColors.muted),
                         const SizedBox(width: 10),
                         Text(
                           'Tanggal: ${DateFormat('dd MMM yyyy').format(selectedDate)}',
@@ -1142,7 +1142,7 @@ Future<void> showProfileSheet(BuildContext context, MorfinController ctrl) async
               // Export Report to Clipboard
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: MorfinColors.surfaceWhite,
                   foregroundColor: MorfinColors.ink,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -1206,7 +1206,7 @@ Future<void> showProfileSheet(BuildContext context, MorfinController ctrl) async
                   Navigator.pop(ctx);
                   ctrl.logout();
                 },
-                icon: const Icon(Icons.logout_rounded, size: 18, color: MorfinColors.muted),
+                icon: Icon(Icons.logout_rounded, size: 18, color: MorfinColors.muted),
                 label: Text('Keluar Akun', style: MorfinTheme.body(13, color: MorfinColors.muted, weight: FontWeight.w700)),
               ),
             ],

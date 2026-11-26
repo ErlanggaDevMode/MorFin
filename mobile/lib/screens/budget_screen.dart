@@ -71,7 +71,7 @@ class BudgetScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: isWide ? BoxShape.rectangle : BoxShape.circle,
                             borderRadius: isWide ? BorderRadius.circular(999) : null,
-                            color: active ? MorfinColors.lime : Colors.white,
+                            color: active ? MorfinColors.lime : MorfinColors.surfaceWhite,
                             boxShadow: active
                                 ? [BoxShadow(color: MorfinColors.lime.withValues(alpha: 0.45), blurRadius: 14, offset: const Offset(0, 6))]
                                 : null,
@@ -79,7 +79,7 @@ class BudgetScreen extends StatelessWidget {
                           child: Center(
                             child: Text(
                               entry.$2,
-                              style: MorfinTheme.body(11.5, color: active ? MorfinColors.ink : MorfinColors.muted, weight: FontWeight.w700),
+                              style: MorfinTheme.body(11.5, color: active ? MorfinColors.onLime : MorfinColors.muted, weight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -149,7 +149,7 @@ class BudgetScreen extends StatelessWidget {
                                 ),
                                 child: Text(
                                   formatIdrCompact(totalLimit),
-                                  style: MorfinTheme.display(12, color: MorfinColors.ink),
+                                  style: MorfinTheme.display(12, color: MorfinColors.onLime),
                                 ),
                               ),
                             ],
@@ -220,7 +220,7 @@ class BudgetScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.94),
+          color: MorfinColors.surfaceWhite,
           borderRadius: BorderRadius.circular(14),
           border: over ? Border.all(color: MorfinColors.coral.withValues(alpha: 0.55), width: 1.2) : null,
         ),

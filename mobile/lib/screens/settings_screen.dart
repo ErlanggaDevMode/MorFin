@@ -106,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Profile Card (No login method shown!)
             Container(
               padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
+              decoration: BoxDecoration(color: MorfinColors.surfaceWhite, borderRadius: BorderRadius.circular(22)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -124,7 +124,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Center(
                           child: Text(
                             (user?.name.isNotEmpty == true ? user!.name[0] : 'M').toUpperCase(),
-                            style: MorfinTheme.display(20, color: MorfinColors.ink),
+                            style: MorfinTheme.display(20, color: MorfinColors.onLime),
                           ),
                         ),
                       ),
@@ -190,10 +190,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Mode Tampilan (Sistem / Terang / Gelap)
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: MorfinColors.surfaceWhite, borderRadius: BorderRadius.circular(22)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Mode Tampilan', style: MorfinTheme.display(16)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Default mengikuti tema sistem perangkat, atau pilih Terang / Gelap secara manual.',
+                    style: MorfinTheme.body(12, color: MorfinColors.muted),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      ('system', 'Sistem', Icons.brightness_auto_rounded),
+                      ('light', 'Terang', Icons.light_mode_rounded),
+                      ('dark', 'Gelap', Icons.dark_mode_rounded),
+                    ].map((opt) {
+                      final active = ctrl.themeModeKey == opt.$1;
+                      return Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(right: opt.$1 == 'dark' ? 0 : 8),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () {
+                              ctrl.setThemeMode(opt.$1);
+                              showMorfinToast(context, 'Mode tampilan: ${opt.$2}');
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 220),
+                              padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: active ? MorfinColors.lime : MorfinColors.surfaceAlt,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: active ? MorfinColors.lime : MorfinColors.ink.withValues(alpha: 0.08),
+                                  width: 1.4,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    opt.$3,
+                                    size: 19,
+                                    color: active ? MorfinColors.onLime : MorfinColors.muted,
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    opt.$2,
+                                    style: MorfinTheme.body(
+                                      12,
+                                      color: active ? MorfinColors.onLime : MorfinColors.ink,
+                                      weight: active ? FontWeight.w800 : FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
             // Theme Palette Switcher (5 Neo-Flat Color Styles)
             Container(
               padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
+              decoration: BoxDecoration(color: MorfinColors.surfaceWhite, borderRadius: BorderRadius.circular(22)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -266,7 +337,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Export PNG & PDF Card with Live Preview
             Container(
               padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
+              decoration: BoxDecoration(color: MorfinColors.surfaceWhite, borderRadius: BorderRadius.circular(22)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -350,8 +421,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 decoration: BoxDecoration(color: MorfinColors.lime, borderRadius: BorderRadius.circular(12)),
                                 child: Column(
                                   children: [
-                                    Text('Hemat', style: MorfinTheme.body(9.5, color: MorfinColors.ink, weight: FontWeight.w700)),
-                                    Text('${summary?.savingsRate ?? 0}%', style: MorfinTheme.display(14, color: MorfinColors.ink)),
+                                    Text('Hemat', style: MorfinTheme.body(9.5, color: MorfinColors.onLime, weight: FontWeight.w700)),
+                                    Text('${summary?.savingsRate ?? 0}%', style: MorfinTheme.display(14, color: MorfinColors.onLime)),
                                   ],
                                 ),
                               ),
@@ -371,12 +442,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: MorfinColors.lime,
-                              foregroundColor: MorfinColors.ink,
+                              foregroundColor: MorfinColors.onLime,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             ),
                             onPressed: _exportingPng ? null : _exportPng,
                             icon: const Icon(Icons.image_outlined, size: 18),
-                            label: Text(_exportingPng ? 'Membuat...' : 'Ekspor PNG', style: MorfinTheme.display(13)),
+                            label: Text(_exportingPng ? 'Membuat...' : 'Ekspor PNG', style: MorfinTheme.display(13, color: MorfinColors.onLime)),
                           ),
                         ),
                       ),
@@ -417,7 +488,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Data & Session Controls
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
+              decoration: BoxDecoration(color: MorfinColors.surfaceWhite, borderRadius: BorderRadius.circular(22)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -469,7 +540,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   TextButton.icon(
                     onPressed: ctrl.logout,
-                    icon: const Icon(Icons.logout_rounded, size: 18, color: MorfinColors.muted),
+                    icon: Icon(Icons.logout_rounded, size: 18, color: MorfinColors.muted),
                     label: Text('Keluar Akun', style: MorfinTheme.body(13, color: MorfinColors.muted, weight: FontWeight.w700)),
                   ),
                 ],

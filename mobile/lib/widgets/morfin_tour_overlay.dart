@@ -215,7 +215,7 @@ class _MorfinTourOverlayState extends State<MorfinTourOverlay>
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: MorfinColors.surfaceWhite,
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
@@ -307,7 +307,7 @@ class _MorfinTourOverlayState extends State<MorfinTourOverlay>
       width: bubbleW,
       padding: const EdgeInsets.fromLTRB(18, 15, 18, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MorfinColors.surfaceWhite,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
@@ -331,7 +331,7 @@ class _MorfinTourOverlayState extends State<MorfinTourOverlay>
                 ),
                 child: Text(
                   '${_stepIdx + 1} / ${widget.steps.length}',
-                  style: MorfinTheme.display(11, color: MorfinColors.ink),
+                  style: MorfinTheme.display(11, color: MorfinColors.onLime),
                 ),
               ),
               const Spacer(),
@@ -469,7 +469,7 @@ class _BubbleTailPainter extends CustomPainter {
         ..lineTo(size.width, 0)
         ..close();
     }
-    canvas.drawPath(path, Paint()..color = Colors.white);
+    canvas.drawPath(path, Paint()..color = MorfinColors.surfaceWhite);
   }
 
   @override

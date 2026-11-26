@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/app_config.dart';
@@ -9,6 +10,7 @@ import '../services/morfin_api.dart';
 class MorfinController extends ChangeNotifier {
   static const _tokenKey = 'morfin_jwt_token_v1';
   static const _themeKey = 'morfin_theme_palette_v1';
+  static const _themeModeKey = 'morfin_theme_mode_v1';
 
   final MorfinApi api;
   MorfinUser? user;
@@ -20,12 +22,24 @@ class MorfinController extends ChangeNotifier {
   String? errorMessage;
   String selectedBudgetPeriod = 'daily';
   String themeId = 'matcha';
+  String themeModeKey = 'system'; // 'system' | 'light' | 'dark'
   bool _googleInitialized = false;
 
   MorfinController({MorfinApi? api}) : api = api ?? MorfinApi();
 
   bool get isAuthenticated => user != null;
   MorfinPalette get palette => MorfinPalettes.byId(themeId);
+
+  ThemeMode get themeMode {
+    switch (themeModeKey) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
 
   Future<void> bootstrap() async {
     isLoading = true;
@@ -36,6 +50,10 @@ class MorfinController extends ChangeNotifier {
       if (savedTheme != null && savedTheme.isNotEmpty) {
         themeId = savedTheme;
         MorfinColors.setPalette(themeId);
+      }
+      final savedMode = prefs.getString(_themeModeKey);
+      if (savedMode == 'system' || savedMode == 'light' || savedMode == 'dark') {
+        themeModeKey = savedMode!;
       }
       final token = prefs.getString(_tokenKey);
       if (token != null && token.isNotEmpty) {
@@ -62,6 +80,16 @@ class MorfinController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themeKey, id);
+    } catch (_) {}
+  }
+
+  Future<void> setThemeMode(String mode) async {
+    if (mode != 'system' && mode != 'light' && mode != 'dark') return;
+    themeModeKey = mode;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_themeModeKey, mode);
     } catch (_) {}
   }
 

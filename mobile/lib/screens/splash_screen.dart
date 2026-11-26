@@ -25,7 +25,7 @@ class SplashScreen extends StatelessWidget {
                   padding: isDesktop ? const EdgeInsets.symmetric(horizontal: 36, vertical: 40) : EdgeInsets.zero,
                   decoration: isDesktop
                       ? BoxDecoration(
-                          color: Colors.white,
+                          color: MorfinColors.surfaceWhite,
                           borderRadius: BorderRadius.circular(38),
                           boxShadow: [
                             BoxShadow(

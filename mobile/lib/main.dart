@@ -26,19 +26,30 @@ class MorfinApp extends StatefulWidget {
   State<MorfinApp> createState() => _MorfinAppState();
 }
 
-class _MorfinAppState extends State<MorfinApp> {
+class _MorfinAppState extends State<MorfinApp> with WidgetsBindingObserver {
   late final MorfinController _ctrl;
   bool _minSplashDone = false;
   double _splashProgress = 0.22;
   String _splashStatus = 'Menyiapkan dompet MorFin...';
   final List<Timer> _timers = [];
+  Brightness _platformBrightness = Brightness.light;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _platformBrightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
     _ctrl = widget.controller ?? MorfinController();
     _ctrl.bootstrap();
     _startSplashTimeline();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    final next = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    if (next != _platformBrightness && mounted) {
+      setState(() => _platformBrightness = next);
+    }
   }
 
   void _startSplashTimeline() {
@@ -86,6 +97,7 @@ class _MorfinAppState extends State<MorfinApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (final t in _timers) {
       t.cancel();
     }
@@ -101,6 +113,13 @@ class _MorfinAppState extends State<MorfinApp> {
       animation: _ctrl,
       builder: (context, _) {
         final palette = _ctrl.palette;
+        final mode = _ctrl.themeMode;
+        final isDark = mode == ThemeMode.dark ||
+            (mode == ThemeMode.system && _platformBrightness == Brightness.dark);
+
+        MorfinColors.setPalette(_ctrl.themeId);
+        MorfinColors.setDark(isDark);
+
         final showLoadingSplash = !_ctrl.isInitialized || !_minSplashDone;
         final effectiveProgress = _ctrl.isInitialized
             ? (_minSplashDone ? 1.0 : _splashProgress)
@@ -109,7 +128,9 @@ class _MorfinAppState extends State<MorfinApp> {
         return MaterialApp(
           title: 'MorFin — Finance Tracker',
           debugShowCheckedModeBanner: false,
-          theme: MorfinTheme.build(palette),
+          theme: MorfinTheme.build(palette, dark: false),
+          darkTheme: MorfinTheme.build(palette, dark: true),
+          themeMode: mode,
           home: AnimatedSwitcher(
             duration: const Duration(milliseconds: 380),
             switchInCurve: Curves.easeOutCubic,
@@ -132,10 +153,10 @@ class _MorfinAppState extends State<MorfinApp> {
                     onTapSkip: _skipLoadingSplash,
                   )
                 : !_ctrl.hasPassedSplash
-                    ? SplashScreen(key: const ValueKey('morfin_splash'), onStart: _ctrl.completeSplash)
+                    ? SplashScreen(key: ValueKey('morfin_splash_$isDark'), onStart: _ctrl.completeSplash)
                     : !_ctrl.isAuthenticated
-                        ? AuthScreen(key: const ValueKey('morfin_auth'), controller: _ctrl)
-                        : MainShell(key: ValueKey('morfin_shell_${_ctrl.themeId}'), controller: _ctrl),
+                        ? AuthScreen(key: ValueKey('morfin_auth_$isDark'), controller: _ctrl)
+                        : MainShell(key: ValueKey('morfin_shell_${_ctrl.themeId}_$isDark'), controller: _ctrl),
           ),
         );
       },

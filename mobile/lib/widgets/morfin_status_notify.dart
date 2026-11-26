@@ -209,7 +209,7 @@ class _MorfinStatusNotifyOverlayState extends State<_MorfinStatusNotifyOverlay>
           : null,
       margin: isDesktopOrTablet ? const EdgeInsets.symmetric(horizontal: 24) : EdgeInsets.zero,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MorfinColors.surfaceWhite,
         borderRadius: borderRadius,
         boxShadow: [
           BoxShadow(
