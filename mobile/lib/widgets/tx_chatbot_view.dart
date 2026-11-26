@@ -56,7 +56,9 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
   bool _scanning = false;
   bool _isListening = false;
   bool _speechReady = false;
+  bool _voiceSessionDispatched = false;
   String _liveTranscript = '';
+  String? _indonesianLocaleId;
 
   static const _quickPrompts = [
     'Beli kopi 28rb qris',
@@ -159,19 +161,55 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
     }
   }
 
-  Future<void> _toggleVoiceRecording() async {
-    if (_isListening) {
-      await _speech.stop();
-      _pulseCtrl.stop();
-      final captured = _liveTranscript.trim();
+  Future<String> _resolveIndonesianLocale() async {
+    if (_indonesianLocaleId != null) return _indonesianLocaleId!;
+    try {
+      final locales = await _speech.locales();
+      for (final loc in locales) {
+        final idLower = loc.localeId.toLowerCase();
+        final nameLower = loc.name.toLowerCase();
+        if (idLower == 'id-id' ||
+            idLower == 'id_id' ||
+            idLower == 'in_id' ||
+            idLower == 'in-id' ||
+            idLower.startsWith('id-') ||
+            idLower.startsWith('id_') ||
+            idLower.startsWith('in_') ||
+            nameLower.contains('indonesia')) {
+          _indonesianLocaleId = kIsWeb ? loc.localeId.replaceAll('_', '-') : loc.localeId;
+          return _indonesianLocaleId!;
+        }
+      }
+    } catch (_) {}
+    _indonesianLocaleId = kIsWeb ? 'id-ID' : 'id_ID';
+    return _indonesianLocaleId!;
+  }
+
+  Future<void> _finishVoiceSession({bool submit = true, String? overrideText}) async {
+    if (_voiceSessionDispatched) return;
+    _voiceSessionDispatched = true;
+
+    final captured = (overrideText ?? _liveTranscript).trim();
+    _pulseCtrl.stop();
+    if (mounted) {
       setState(() {
         _isListening = false;
         _liveTranscript = '';
       });
-      if (captured.isNotEmpty) {
-        _inputCtrl.text = captured;
-        await _sendText(captured);
-      }
+    }
+    try {
+      await _speech.stop();
+    } catch (_) {}
+
+    if (submit && captured.isNotEmpty && mounted) {
+      _inputCtrl.clear();
+      await _sendText(captured);
+    }
+  }
+
+  Future<void> _toggleVoiceRecording() async {
+    if (_isListening) {
+      await _finishVoiceSession(submit: true);
       return;
     }
 
@@ -180,23 +218,16 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
         _speechReady = await _speech.initialize(
           onError: (err) {
             if (!mounted) return;
-            _pulseCtrl.stop();
-            setState(() => _isListening = false);
-            showMorfinToast(context, 'Suara tidak terdeteksi (${err.errorMsg})', isError: true);
+            final hadText = _liveTranscript.trim().isNotEmpty;
+            _finishVoiceSession(submit: hadText);
+            if (!hadText) {
+              showMorfinToast(context, 'Suara tidak terdeteksi (${err.errorMsg})', isError: true);
+            }
           },
           onStatus: (status) {
             if (!mounted) return;
             if ((status == 'done' || status == 'notListening') && _isListening) {
-              _pulseCtrl.stop();
-              final captured = _liveTranscript.trim();
-              setState(() {
-                _isListening = false;
-                _liveTranscript = '';
-              });
-              if (captured.isNotEmpty) {
-                _inputCtrl.text = captured;
-                _sendText(captured);
-              }
+              _finishVoiceSession(submit: true);
             }
           },
         );
@@ -213,6 +244,10 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
         return;
       }
 
+      final localeId = await _resolveIndonesianLocale();
+      if (!mounted) return;
+
+      _voiceSessionDispatched = false;
       setState(() {
         _isListening = true;
         _liveTranscript = '';
@@ -220,32 +255,29 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
       _pulseCtrl.repeat(reverse: true);
 
       await _speech.listen(
-        localeId: 'id_ID',
+        localeId: localeId,
         listenFor: const Duration(seconds: 25),
         pauseFor: const Duration(seconds: 3),
         onResult: (res) {
-          if (!mounted) return;
+          if (!mounted || _voiceSessionDispatched) return;
+          final words = res.recognizedWords;
           setState(() {
-            _liveTranscript = res.recognizedWords;
-            _inputCtrl.text = res.recognizedWords;
+            _liveTranscript = words;
+            _inputCtrl.text = words;
           });
-          if (res.finalResult && res.recognizedWords.trim().isNotEmpty) {
-            final finalText = res.recognizedWords.trim();
-            _speech.stop();
-            _pulseCtrl.stop();
-            setState(() {
-              _isListening = false;
-              _liveTranscript = '';
-            });
-            _inputCtrl.clear();
-            _sendText(finalText);
+          if (res.finalResult && words.trim().isNotEmpty) {
+            _finishVoiceSession(submit: true, overrideText: words);
           }
         },
       );
     } catch (e) {
+      _voiceSessionDispatched = true;
       _pulseCtrl.stop();
       if (mounted) {
-        setState(() => _isListening = false);
+        setState(() {
+          _isListening = false;
+          _liveTranscript = '';
+        });
         showMorfinToast(context, 'Gagal memulai rekaman suara: $e', isError: true);
       }
     }
@@ -501,7 +533,7 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
                   Expanded(
                     child: Text(
                       _liveTranscript.isEmpty
-                          ? 'Mendengarkan... sebutkan transaksi (misal: beli kopi 25 ribu)'
+                          ? 'Mendengarkan (Bahasa Indonesia)... sebutkan transaksi'
                           : '"$_liveTranscript"',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
