@@ -93,7 +93,10 @@ class MorfinBudget {
     required this.spentAmount,
   });
 
-  int get usedPercent => limitAmount > 0 ? ((spentAmount / limitAmount) * 100).clamp(0, 100).round() : 0;
+  int get usedPercent => limitAmount > 0 ? ((spentAmount / limitAmount) * 100).round() : 0;
+  double get progressRatio => limitAmount > 0 ? (spentAmount / limitAmount).clamp(0.0, 1.0) : 0.0;
+  bool get isOverBudget => limitAmount > 0 && spentAmount > limitAmount;
+  int get overAmount => isOverBudget ? (spentAmount - limitAmount) : 0;
 
   factory MorfinBudget.fromJson(Map<String, dynamic> j) => MorfinBudget(
         id: j['id']?.toString() ?? '',

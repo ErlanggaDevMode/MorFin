@@ -23,15 +23,47 @@ function mapTx(r) {
 }
 
 function mapBudget(r) {
+  const limitAmount = Number(r.limit_amount);
+  const spentAmount = Number(
+    r.computed_spent_amount !== undefined ? r.computed_spent_amount : r.spent_amount
+  );
+  const usedPercent = limitAmount > 0 ? Math.round((spentAmount / limitAmount) * 100) : 0;
+  const isOverBudget = limitAmount > 0 && spentAmount > limitAmount;
+  const overAmount = isOverBudget ? spentAmount - limitAmount : 0;
   return {
     id: r.id,
     name: r.name,
     category: r.category,
     period: r.period,
-    limitAmount: Number(r.limit_amount),
-    spentAmount: Number(r.spent_amount),
+    limitAmount,
+    spentAmount,
+    usedPercent,
+    isOverBudget,
+    overAmount,
   };
 }
+
+const BUDGET_WITH_PERIOD_SPENT_SQL = `
+  SELECT
+    b.*,
+    COALESCE((
+      SELECT SUM(t.amount)
+      FROM transactions t
+      WHERE t.user_id = b.user_id
+        AND t.type = 'expense'
+        AND LOWER(TRIM(t.category)) = LOWER(TRIM(b.category))
+        AND t.occurred_at >= (
+          CASE b.period
+            WHEN 'daily'   THEN DATE_TRUNC('day',   NOW() AT TIME ZONE 'Asia/Jakarta')
+            WHEN 'weekly'  THEN DATE_TRUNC('week',  NOW() AT TIME ZONE 'Asia/Jakarta')
+            WHEN 'monthly' THEN DATE_TRUNC('month', NOW() AT TIME ZONE 'Asia/Jakarta')
+            WHEN 'yearly'  THEN DATE_TRUNC('year',  NOW() AT TIME ZONE 'Asia/Jakarta')
+            ELSE DATE_TRUNC('month', NOW() AT TIME ZONE 'Asia/Jakarta')
+          END
+        ) AT TIME ZONE 'Asia/Jakarta'
+    ), 0) AS computed_spent_amount
+  FROM budgets b
+`;
 
 function mapWallet(r) {
   const current = Number(r.current_amount);
@@ -67,7 +99,7 @@ router.get('/dashboard', async (req, res) => {
     const uid = req.user.id;
     const [txRes, budRes, walRes, goalRes] = await Promise.all([
       pool.query('SELECT * FROM transactions WHERE user_id = $1 ORDER BY occurred_at DESC LIMIT 200', [uid]),
-      pool.query('SELECT * FROM budgets WHERE user_id = $1 ORDER BY created_at ASC', [uid]),
+      pool.query(`${BUDGET_WITH_PERIOD_SPENT_SQL} WHERE b.user_id = $1 ORDER BY b.created_at ASC`, [uid]),
       pool.query('SELECT * FROM wallets WHERE user_id = $1 ORDER BY created_at ASC', [uid]),
       pool.query('SELECT * FROM goals WHERE user_id = $1 ORDER BY created_at ASC', [uid]),
     ]);
@@ -315,15 +347,6 @@ router.post('/transactions', async (req, res) => {
       ]
     );
 
-    if (type === 'expense') {
-      await pool.query(
-        `UPDATE budgets
-         SET spent_amount = spent_amount + $1
-         WHERE user_id = $2 AND category = $3`,
-        [amount, req.user.id, category]
-      );
-    }
-
     if (walletId) {
       const delta = type === 'income' ? amount : -amount;
       await pool.query(
@@ -374,15 +397,6 @@ router.delete('/transactions/:id', async (req, res) => {
     [req.params.id, req.user.id]
   );
   if (r.rowCount === 0) return res.status(404).json({ error: 'Transaksi tidak ditemukan.' });
-  const deleted = r.rows[0];
-  if (deleted.type === 'expense') {
-    await pool.query(
-      `UPDATE budgets
-       SET spent_amount = GREATEST(0, spent_amount - $1)
-       WHERE user_id = $2 AND category = $3`,
-      [Number(deleted.amount), req.user.id, deleted.category]
-    );
-  }
   return res.json({ deleted: true, id: req.params.id });
 });
 
@@ -390,12 +404,12 @@ router.delete('/transactions/:id', async (req, res) => {
 router.get('/budgets', async (req, res) => {
   const period = req.query.period;
   const params = [req.user.id];
-  let sql = 'SELECT * FROM budgets WHERE user_id = $1';
+  let sql = `${BUDGET_WITH_PERIOD_SPENT_SQL} WHERE b.user_id = $1`;
   if (VALID_PERIODS.has(period)) {
     params.push(period);
-    sql += ' AND period = $2';
+    sql += ' AND b.period = $2';
   }
-  sql += ' ORDER BY created_at ASC';
+  sql += ' ORDER BY b.created_at ASC';
   const r = await pool.query(sql, params);
   return res.json({ budgets: r.rows.map(mapBudget) });
 });

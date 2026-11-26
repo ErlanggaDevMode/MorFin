@@ -23,6 +23,8 @@ class BudgetScreen extends StatelessWidget {
     final items = allBudgets.where((b) => b.period == period).toList();
     final totalLimit = items.fold<int>(0, (s, b) => s + b.limitAmount);
     final totalSpent = items.fold<int>(0, (s, b) => s + b.spentAmount);
+    final totalOver = totalLimit > 0 && totalSpent > totalLimit;
+    final totalUsedPct = totalLimit > 0 ? ((totalSpent / totalLimit) * 100).round() : 0;
     final savedPct = totalLimit > 0 ? (((totalLimit - totalSpent) / totalLimit) * 100).clamp(0, 100).round() : 100;
 
     return LayoutBuilder(
@@ -112,13 +114,29 @@ class BudgetScreen extends StatelessWidget {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(savedPct >= 20 ? 'Keep It Up!' : 'Hati-Hati!', style: MorfinTheme.display(20, color: Colors.white)),
+                                  Text(
+                                    totalOver
+                                        ? 'Melebihi Batas!'
+                                        : savedPct >= 20
+                                            ? 'Keep It Up!'
+                                            : 'Hati-Hati!',
+                                    style: MorfinTheme.display(
+                                      20,
+                                      color: totalOver ? MorfinColors.coralSoft : Colors.white,
+                                    ),
+                                  ),
                                   const SizedBox(height: 5),
                                   SizedBox(
-                                    width: isWide ? 360 : 175,
+                                    width: isWide ? 360 : 185,
                                     child: Text(
-                                      'Terpakai ${formatIdrCompact(totalSpent)} · Sisa $savedPct% batas periode ini',
-                                      style: MorfinTheme.body(11.5, color: MorfinColors.mutedLight),
+                                      totalOver
+                                          ? 'Terpakai $totalUsedPct% (${formatIdrCompact(totalSpent)}) · Over ${formatIdr(totalSpent - totalLimit)}'
+                                          : 'Terpakai ${formatIdrCompact(totalSpent)} · Sisa $savedPct% batas periode ini',
+                                      style: MorfinTheme.body(
+                                        11.5,
+                                        color: totalOver ? MorfinColors.coralSoft : MorfinColors.mutedLight,
+                                        weight: totalOver ? FontWeight.w700 : FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -171,7 +189,7 @@ class BudgetScreen extends StatelessWidget {
                               crossAxisCount: 2,
                               crossAxisSpacing: 14,
                               mainAxisSpacing: 14,
-                              mainAxisExtent: 106,
+                              mainAxisExtent: 118,
                             ),
                             itemBuilder: (_, idx) => _budgetCard(context, items[idx], idx),
                           )
@@ -196,14 +214,15 @@ class BudgetScreen extends StatelessWidget {
 
   Widget _budgetCard(BuildContext context, MorfinBudget b, int idx) {
     final tagOnLeft = idx.isOdd;
-    final over = b.spentAmount > b.limitAmount;
+    final over = b.isOverBudget;
 
     final inner = Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
+          color: Colors.white.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(14),
+          border: over ? Border.all(color: MorfinColors.coral.withValues(alpha: 0.55), width: 1.2) : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,6 +238,19 @@ class BudgetScreen extends StatelessWidget {
                     style: MorfinTheme.body(13, weight: FontWeight.w700),
                   ),
                 ),
+                if (over)
+                  Container(
+                    margin: const EdgeInsets.only(left: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: MorfinColors.coral.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      'Over ${formatIdr(b.overAmount)}',
+                      style: MorfinTheme.body(9.5, color: MorfinColors.coral, weight: FontWeight.w800),
+                    ),
+                  ),
                 InkWell(
                   onTap: () => showAddBudgetSheet(context, controller, existing: b),
                   child: Padding(
@@ -228,13 +260,15 @@ class BudgetScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
-              'Terpakai ${b.usedPercent}% · ${formatIdrCompact(b.spentAmount)}',
+              'Terpakai ${b.usedPercent}% · ${formatIdr(b.spentAmount)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: MorfinTheme.body(
                 10.5,
                 color: over ? MorfinColors.coral : MorfinColors.muted,
-                weight: FontWeight.w600,
+                weight: over ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
             const SizedBox(height: 6),
@@ -242,7 +276,7 @@ class BudgetScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(99),
               child: LinearProgressIndicator(
                 minHeight: 5,
-                value: (b.usedPercent / 100.0).clamp(0.0, 1.0),
+                value: b.progressRatio,
                 backgroundColor: MorfinColors.ink.withValues(alpha: 0.08),
                 color: over ? MorfinColors.coral : MorfinColors.carbon,
               ),
@@ -255,7 +289,7 @@ class BudgetScreen extends StatelessWidget {
     final tag = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: MorfinColors.carbon,
+        color: over ? MorfinColors.coral : MorfinColors.carbon,
         borderRadius: BorderRadius.circular(13),
       ),
       child: Text(
@@ -269,7 +303,7 @@ class BudgetScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: MorfinColors.lime,
+          color: over ? MorfinColors.coral.withValues(alpha: 0.22) : MorfinColors.lime,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(

@@ -79,20 +79,31 @@ class ReportExporter {
     y -= 18;
     rect(36, y - 4, 523, 18, darkRgb);
     text(44, y + 1, 'Anggaran', size: 9, bold: true, rgb: '1 1 1');
-    text(215, y + 1, 'Periode', size: 9, bold: true, rgb: '1 1 1');
-    text(295, y + 1, 'Terpakai', size: 9, bold: true, rgb: '1 1 1');
-    text(405, y + 1, 'Batas', size: 9, bold: true, rgb: '1 1 1');
-    text(508, y + 1, 'Pakai', size: 9, bold: true, rgb: '1 1 1');
+    text(188, y + 1, 'Periode', size: 9, bold: true, rgb: '1 1 1');
+    text(248, y + 1, 'Terpakai', size: 9, bold: true, rgb: '1 1 1');
+    text(338, y + 1, 'Batas', size: 9, bold: true, rgb: '1 1 1');
+    text(426, y + 1, 'Pakai', size: 9, bold: true, rgb: '1 1 1');
     y -= 18;
+
+    const overBgRgb = '1.000 0.930 0.930';
+    const overTextRgb = '0.840 0.145 0.145';
+    const periodLabels = {
+      'daily': 'Harian',
+      'weekly': 'Mingguan',
+      'monthly': 'Bulanan',
+      'yearly': 'Tahunan',
+    };
 
     for (final b in budgets.take(6)) {
       if (y < 90) break;
-      rect(36, y - 4, 523, 16, softRgb);
-      text(44, y, b.name.length > 26 ? '${b.name.substring(0, 26)}...' : b.name, size: 9);
-      text(215, y, b.period, size: 9);
-      text(295, y, formatIdr(b.spentAmount), size: 9);
-      text(405, y, formatIdr(b.limitAmount), size: 9);
-      text(508, y, '${b.usedPercent}%', size: 9, bold: true);
+      final isOver = b.isOverBudget;
+      rect(36, y - 4, 523, 16, isOver ? overBgRgb : softRgb);
+      text(44, y, b.name.length > 22 ? '${b.name.substring(0, 22)}...' : b.name, size: 9);
+      text(188, y, periodLabels[b.period] ?? b.period, size: 9);
+      text(248, y, formatIdr(b.spentAmount), size: 9, bold: isOver, rgb: isOver ? overTextRgb : '0.09 0.10 0.09');
+      text(338, y, formatIdr(b.limitAmount), size: 9);
+      final usageLabel = isOver ? '${b.usedPercent}% (Over ${formatIdr(b.overAmount)})' : '${b.usedPercent}%';
+      text(426, y, usageLabel, size: 8.5, bold: true, rgb: isOver ? overTextRgb : '0.09 0.10 0.09');
       y -= 18;
     }
 

@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:morfin/core/theme/morfin_theme.dart';
+import 'package:morfin/core/utils/report_exporter.dart';
 import 'package:morfin/main.dart';
+import 'package:morfin/models/morfin_models.dart';
 import 'package:morfin/screens/duolingo_splash_screen.dart';
 import 'package:morfin/state/morfin_controller.dart';
 import 'package:morfin/widgets/morfin_status_notify.dart';
@@ -133,5 +137,58 @@ void main() {
     await tester.tap(find.text('Mulai Pakai'));
     await tester.pumpAndSettle();
     expect(finished, isTrue);
+  });
+
+  test('MorfinBudget computes uncapped over-budget percentage and PDF prints Over label', () async {
+    const budget = MorfinBudget(
+      id: 'b1',
+      name: 'Kopi Harian',
+      category: 'Makan',
+      period: 'daily',
+      limitAmount: 25000,
+      spentAmount: 50000,
+    );
+
+    expect(budget.usedPercent, 200);
+    expect(budget.progressRatio, 1.0);
+    expect(budget.isOverBudget, isTrue);
+    expect(budget.overAmount, 25000);
+
+    final pdfBytes = await ReportExporter.buildPdfBytes(
+      user: const MorfinUser(
+        id: 'u1',
+        email: 'test@morfin.app',
+        name: 'Tester',
+        authProvider: 'email',
+        hideBalance: false,
+        currency: 'IDR',
+      ),
+      dashboard: const DashboardPayload(
+        summary: DashboardSummary(
+          totalBalance: 0,
+          totalIncome: 50000,
+          totalExpense: 50000,
+          savingsRate: 0,
+          hematStreakDays: 0,
+          budgetRemaining: 0,
+          budgetHealthPercent: 0,
+          weeklyDays: [],
+          weeklySeries: [],
+          weeklyCashflowBars: [],
+          categoryBars: [],
+          completedGoals: 0,
+          activeGoals: 0,
+          pausedGoals: 0,
+        ),
+        transactions: [],
+        budgets: [budget],
+        wallets: [],
+        goals: [],
+      ),
+      palette: MorfinPalettes.all.first,
+    );
+
+    final pdfText = latin1.decode(pdfBytes);
+    expect(pdfText, contains(r'200% \(Over Rp 25.000\)'));
   });
 }

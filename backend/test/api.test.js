@@ -98,4 +98,50 @@ test('MorFin API end-to-end auth + PostgreSQL finance CRUD', async () => {
   });
   assert.equal(goalPatch.status, 200);
   assert.equal((await goalPatch.json()).goal.status, 'completed');
+
+  // 8. Daily budget ignores yesterday's expenses and computes uncapped % (e.g. 200%) for today
+  const budCreate = await fetch(`${BASE}/api/budgets`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ name: 'Jajan Harian', category: 'Makan', period: 'daily', limitAmount: 25000 }),
+  });
+  assert.equal(budCreate.status, 201);
+
+  const yesterdayIso = new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString();
+  const txYest = await fetch(`${BASE}/api/transactions`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({
+      title: 'Kopi Kemarin',
+      category: 'Makan',
+      type: 'expense',
+      amount: 50000,
+      paymentMethod: 'QRIS',
+      occurredAt: yesterdayIso,
+    }),
+  });
+  assert.equal(txYest.status, 201);
+
+  const dashAfterYest = await fetch(`${BASE}/api/dashboard`, { headers: authHeaders }).then((r) => r.json());
+  assert.equal(dashAfterYest.budgets[0].spentAmount, 0);
+  assert.equal(dashAfterYest.budgets[0].usedPercent, 0);
+
+  const txToday = await fetch(`${BASE}/api/transactions`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({
+      title: 'Kopi Hari Ini',
+      category: 'Makan',
+      type: 'expense',
+      amount: 50000,
+      paymentMethod: 'QRIS',
+    }),
+  });
+  assert.equal(txToday.status, 201);
+
+  const dashAfterToday = await fetch(`${BASE}/api/dashboard`, { headers: authHeaders }).then((r) => r.json());
+  assert.equal(dashAfterToday.budgets[0].spentAmount, 50000);
+  assert.equal(dashAfterToday.budgets[0].usedPercent, 200);
+  assert.equal(dashAfterToday.budgets[0].isOverBudget, true);
+  assert.equal(dashAfterToday.budgets[0].overAmount, 25000);
 });
