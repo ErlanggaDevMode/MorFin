@@ -20,6 +20,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _tab = 0;
+  int _txInitialSection = 0;
   int _txInitialSubTab = 0;
 
   final GlobalKey _tourBalanceKey = GlobalKey();
@@ -82,7 +83,10 @@ class _MainShellState extends State<MainShell> {
 
   void _selectTab(int idx) {
     setState(() {
-      if (idx == 2 && _tab != 2) _txInitialSubTab = 0;
+      if (idx == 2 && _tab != 2) {
+        _txInitialSection = 0;
+        _txInitialSubTab = 0;
+      }
       _tab = idx;
     });
   }
@@ -95,6 +99,7 @@ class _MainShellState extends State<MainShell> {
           controller: widget.controller,
           onNavigateTab: _selectTab,
           onJumpToWallets: () => setState(() {
+            _txInitialSection = 1;
             _txInitialSubTab = 1;
             _tab = 2;
           }),
@@ -109,8 +114,9 @@ class _MainShellState extends State<MainShell> {
         );
       case 2:
         return TransactionsScreen(
-          key: ValueKey('tab_tx_$_txInitialSubTab'),
+          key: ValueKey('tab_tx_${_txInitialSection}_$_txInitialSubTab'),
           controller: widget.controller,
+          initialSection: _txInitialSection,
           initialSubTab: _txInitialSubTab,
         );
       case 3:
@@ -118,6 +124,7 @@ class _MainShellState extends State<MainShell> {
           key: const ValueKey('tab_goals'),
           controller: widget.controller,
           onJumpToWallets: () => setState(() {
+            _txInitialSection = 1;
             _txInitialSubTab = 1;
             _tab = 2;
           }),

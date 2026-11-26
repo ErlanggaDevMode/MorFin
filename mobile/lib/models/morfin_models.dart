@@ -313,6 +313,55 @@ class DashboardSummary {
   }
 }
 
+class MorfinChatDraft {
+  final String title;
+  final String category;
+  final String type; // 'income' | 'expense'
+  final int amount;
+  final String paymentMethod;
+  final DateTime occurredAt;
+
+  const MorfinChatDraft({
+    required this.title,
+    required this.category,
+    required this.type,
+    required this.amount,
+    required this.paymentMethod,
+    required this.occurredAt,
+  });
+
+  bool get isIncome => type == 'income';
+
+  factory MorfinChatDraft.fromJson(Map<String, dynamic> j) => MorfinChatDraft(
+        title: j['title']?.toString() ?? 'Transaksi',
+        category: j['category']?.toString() ?? 'Lainnya',
+        type: j['type']?.toString() ?? 'expense',
+        amount: (j['amount'] as num?)?.toInt() ?? 0,
+        paymentMethod: j['paymentMethod']?.toString() ?? 'QRIS · E-Wallet',
+        occurredAt: DateTime.tryParse(j['occurredAt']?.toString() ?? '')?.toLocal() ?? DateTime.now(),
+      );
+}
+
+class MorfinChatResult {
+  final String reply;
+  final List<MorfinChatDraft> items;
+  final String? rawText;
+
+  const MorfinChatResult({
+    required this.reply,
+    required this.items,
+    this.rawText,
+  });
+
+  factory MorfinChatResult.fromJson(Map<String, dynamic> j) => MorfinChatResult(
+        reply: j['reply']?.toString() ?? '',
+        rawText: j['rawText']?.toString(),
+        items: ((j['items'] as List?) ?? [])
+            .map((e) => MorfinChatDraft.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList(),
+      );
+}
+
 class DashboardPayload {
   final DashboardSummary summary;
   final List<MorfinTransaction> transactions;

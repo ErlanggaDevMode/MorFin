@@ -315,4 +315,30 @@ class MorfinApi {
     final res = await _client.delete(Uri.parse('$baseUrl/api/goals/$id'), headers: _headers());
     _decode(res);
   }
+
+  Future<MorfinChatResult> parseChatText(String text) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/api/chat/parse'),
+      headers: _headers(),
+      body: jsonEncode({'text': text}),
+    );
+    return MorfinChatResult.fromJson(_decode(res));
+  }
+
+  Future<MorfinChatResult> scanReceiptImage({
+    required String imageBase64,
+    String mimeType = 'image/jpeg',
+    String? fileName,
+  }) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/api/chat/scan-receipt'),
+      headers: _headers(),
+      body: jsonEncode({
+        'imageBase64': imageBase64,
+        'mimeType': mimeType,
+        'fileName': ?fileName,
+      }),
+    );
+    return MorfinChatResult.fromJson(_decode(res));
+  }
 }

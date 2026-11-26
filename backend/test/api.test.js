@@ -144,4 +144,17 @@ test('MorFin API end-to-end auth + PostgreSQL finance CRUD', async () => {
   assert.equal(dashAfterToday.budgets[0].usedPercent, 200);
   assert.equal(dashAfterToday.budgets[0].isOverBudget, true);
   assert.equal(dashAfterToday.budgets[0].overAmount, 25000);
+
+  // 9. Chat AI natural Indonesian transaction parser
+  const chatRes = await fetch(`${BASE}/api/chat/parse`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ text: 'Beli kopi kenangan 28rb qris' }),
+  });
+  assert.equal(chatRes.status, 200);
+  const chatData = await chatRes.json();
+  assert.equal(chatData.items.length, 1);
+  assert.equal(chatData.items[0].amount, 28000);
+  assert.equal(chatData.items[0].category, 'Makan');
+  assert.equal(chatData.items[0].type, 'expense');
 });

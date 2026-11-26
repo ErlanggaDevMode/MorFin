@@ -5,18 +5,27 @@ import '../models/morfin_models.dart';
 import '../state/morfin_controller.dart';
 import '../widgets/add_sheets.dart';
 import '../widgets/morfin_status_notify.dart';
+import '../widgets/tx_chatbot_view.dart';
 
 class TransactionsScreen extends StatefulWidget {
   final MorfinController controller;
+  final int initialSection; // 0 = Chat AI (default), 1 = Manual (kanan)
   final int initialSubTab;
-  const TransactionsScreen({super.key, required this.controller, this.initialSubTab = 0});
+  const TransactionsScreen({
+    super.key,
+    required this.controller,
+    this.initialSection = 0,
+    this.initialSubTab = 0,
+  });
 
   @override
   State<TransactionsScreen> createState() => _TransactionsScreenState();
 }
 
 class _TransactionsScreenState extends State<TransactionsScreen> {
+  late int _section;
   late int subTab;
+  late final PageController _pageCtrl;
   int? frontWalletIdx;
   String _search = '';
   String _typeFilter = 'all';
@@ -24,7 +33,118 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
+    _section = widget.initialSection;
     subTab = widget.initialSubTab;
+    _pageCtrl = PageController(initialPage: _section);
+  }
+
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  void _slideToSection(int target) {
+    if (_section == target) return;
+    setState(() => _section = target);
+    _pageCtrl.animateToPage(
+      target,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Widget _buildModeSlider() {
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: MorfinColors.ink.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Stack(
+        children: [
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+            alignment: _section == 0 ? Alignment.centerLeft : Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: 0.5,
+              heightFactor: 1.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: MorfinColors.carbon,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: MorfinColors.carbon.withValues(alpha: 0.18),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _slideToSection(0),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 15,
+                          color: _section == 0 ? MorfinColors.lime : MorfinColors.muted,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Chat AI',
+                          style: MorfinTheme.display(
+                            12.5,
+                            color: _section == 0 ? Colors.white : MorfinColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _slideToSection(1),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.view_list_rounded,
+                          size: 15,
+                          color: _section == 1 ? MorfinColors.lime : MorfinColors.muted,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Manual',
+                          style: MorfinTheme.display(
+                            12.5,
+                            color: _section == 1 ? Colors.white : MorfinColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -34,78 +154,98 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 900;
 
-        if (isWide) {
-          // Responsive Desktop Web: Side-by-side Daily Timeline + Categories & Stacked Wallets!
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(28, 16, 28, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Transaksi & Kantong Tabungan', style: MorfinTheme.display(20)),
-                const SizedBox(height: 14),
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 12,
-                        child: _buildDailyTimeline(context, dash?.transactions ?? []),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 10,
-                        child: _buildCategoryAndWallets(
-                          context,
-                          dash?.summary.categoryBars ?? [],
-                          dash?.wallets ?? [],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        // Mobile Layout: Segmented Pill Switcher (Harian | Kategori) with smooth AnimatedSwitcher
         return Padding(
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+          padding: EdgeInsets.fromLTRB(isWide ? 28 : 18, 14, isWide ? 28 : 18, 0),
           child: Column(
             children: [
-              Center(child: Text('Transaksi', style: MorfinTheme.display(18))),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: MorfinColors.ink.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Row(
+              if (isWide)
+                Row(
                   children: [
-                    _segTab('Harian', 0),
-                    _segTab('Kategori', 1),
+                    Text(
+                      _section == 0 ? 'Chat AI Pencatat' : 'Transaksi & Kantong Tabungan',
+                      style: MorfinTheme.display(20),
+                    ),
+                    const Spacer(),
+                    SizedBox(width: 280, child: _buildModeSlider()),
                   ],
-                ),
-              ),
-              const SizedBox(height: 14),
+                )
+              else ...[
+                Center(child: Text('Transaksi', style: MorfinTheme.display(18))),
+                const SizedBox(height: 12),
+                _buildModeSlider(),
+              ],
+              const SizedBox(height: 12),
               Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 260),
-                  switchInCurve: Curves.easeOutCubic,
-                  child: subTab == 0
-                      ? KeyedSubtree(
-                          key: const ValueKey('tx_daily'),
-                          child: _buildDailyTimeline(context, dash?.transactions ?? []),
-                        )
-                      : KeyedSubtree(
-                          key: const ValueKey('tx_cat'),
-                          child: _buildCategoryAndWallets(
-                            context,
-                            dash?.summary.categoryBars ?? [],
-                            dash?.wallets ?? [],
+                child: PageView(
+                  controller: _pageCtrl,
+                  onPageChanged: (idx) => setState(() => _section = idx),
+                  children: [
+                    // Slide 0 (Kiri - Default): Chat AI + Voice Recording + Photo Receipt Scanner
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: isWide ? 760 : double.infinity),
+                        child: TxChatbotView(controller: widget.controller),
+                      ),
+                    ),
+
+                    // Slide 1 (Kanan): Manual Transaksi (Harian + Kategori + Kantong Tabungan)
+                    isWide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 12,
+                                child: _buildDailyTimeline(context, dash?.transactions ?? []),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                flex: 10,
+                                child: _buildCategoryAndWallets(
+                                  context,
+                                  dash?.summary.categoryBars ?? [],
+                                  dash?.wallets ?? [],
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: MorfinColors.ink.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Row(
+                                  children: [
+                                    _segTab('Harian', 0),
+                                    _segTab('Kategori', 1),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Expanded(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 260),
+                                  switchInCurve: Curves.easeOutCubic,
+                                  child: subTab == 0
+                                      ? KeyedSubtree(
+                                          key: const ValueKey('tx_daily'),
+                                          child: _buildDailyTimeline(context, dash?.transactions ?? []),
+                                        )
+                                      : KeyedSubtree(
+                                          key: const ValueKey('tx_cat'),
+                                          child: _buildCategoryAndWallets(
+                                            context,
+                                            dash?.summary.categoryBars ?? [],
+                                            dash?.wallets ?? [],
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                  ],
                 ),
               ),
             ],

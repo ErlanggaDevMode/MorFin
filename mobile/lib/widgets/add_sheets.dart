@@ -82,29 +82,44 @@ Widget _quickAmountChips(TextEditingController ctrl, VoidCallback refresh) {
   );
 }
 
-Future<void> showAddTransactionSheet(
+Future<bool?> showAddTransactionSheet(
   BuildContext context,
   MorfinController ctrl, {
   MorfinTransaction? existing,
+  MorfinChatDraft? prefill,
 }) async {
   final isEdit = existing != null;
-  final titleCtrl = TextEditingController(text: existing?.title ?? '');
-  final amountCtrl = TextEditingController(text: existing != null ? existing.amount.toString() : '');
-  String type = existing?.type ?? 'expense';
-  String category = existing?.category ?? 'Makan';
-  String method = existing?.paymentMethod ?? 'QRIS · E-Wallet';
+  final titleCtrl = TextEditingController(text: existing?.title ?? prefill?.title ?? '');
+  final amountCtrl = TextEditingController(
+    text: existing != null
+        ? existing.amount.toString()
+        : (prefill != null && prefill.amount > 0 ? prefill.amount.toString() : ''),
+  );
+  String type = existing?.type ?? prefill?.type ?? 'expense';
+  String category = existing?.category ?? prefill?.category ?? 'Makan';
+  String method = existing?.paymentMethod ?? prefill?.paymentMethod ?? 'QRIS · E-Wallet';
   String? selectedWalletId = existing?.walletId;
-  DateTime selectedDate = existing?.occurredAt ?? DateTime.now();
+  DateTime selectedDate = existing?.occurredAt ?? prefill?.occurredAt ?? DateTime.now();
   bool saving = false;
   String? errorMsg;
 
   const categories = ['Makan', 'Transport', 'Tagihan', 'Cloud AI', 'Edukasi', 'Hiburan', 'Tabungan', 'Gaji / Proyek', 'Lainnya'];
-  if (!categories.contains(category)) category = 'Lainnya';
+  if (!categories.contains(category)) category = type == 'income' ? 'Gaji / Proyek' : 'Lainnya';
   const methods = ['QRIS · E-Wallet', 'Transfer · BCA', 'Kartu Debit', 'Tunai'];
-  if (!methods.contains(method)) method = 'QRIS · E-Wallet';
+  if (!methods.contains(method)) {
+    if (method.toLowerCase().contains('transfer') || method.toLowerCase().contains('bank')) {
+      method = 'Transfer · BCA';
+    } else if (method.toLowerCase().contains('tunai') || method.toLowerCase().contains('cash')) {
+      method = 'Tunai';
+    } else if (method.toLowerCase().contains('debit') || method.toLowerCase().contains('kartu')) {
+      method = 'Kartu Debit';
+    } else {
+      method = 'QRIS · E-Wallet';
+    }
+  }
   final wallets = ctrl.dashboard?.wallets ?? [];
 
-  await showModalBottomSheet<void>(
+  return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: MorfinColors.pistachio,
@@ -316,7 +331,7 @@ Future<void> showAddTransactionSheet(
                             }
                             if (ctx.mounted) {
                               final label = titleCtrl.text.trim();
-                              Navigator.pop(ctx);
+                              Navigator.pop(ctx, true);
                               showMorfinStatusNotify(
                                 context,
                                 isSuccess: true,
@@ -849,7 +864,7 @@ Future<void> showAddGoalSheet(BuildContext context, MorfinController ctrl) async
                             );
                             if (ctx.mounted) {
                               final label = titleCtrl.text.trim();
-                              Navigator.pop(ctx);
+                              Navigator.pop(ctx, true);
                               showMorfinStatusNotify(
                                 context,
                                 isSuccess: true,

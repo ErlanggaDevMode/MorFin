@@ -6,6 +6,7 @@ import 'package:morfin/core/utils/report_exporter.dart';
 import 'package:morfin/main.dart';
 import 'package:morfin/models/morfin_models.dart';
 import 'package:morfin/screens/duolingo_splash_screen.dart';
+import 'package:morfin/screens/transactions_screen.dart';
 import 'package:morfin/state/morfin_controller.dart';
 import 'package:morfin/widgets/morfin_status_notify.dart';
 import 'package:morfin/widgets/morfin_tour_overlay.dart';
@@ -190,5 +191,30 @@ void main() {
 
     final pdfText = latin1.decode(pdfBytes);
     expect(pdfText, contains(r'200% \(Over Rp 25.000\)'));
+  });
+
+  testWidgets('TransactionsScreen defaults to Chat AI on left and slides to Manual on right', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final ctrl = MorfinController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TransactionsScreen(controller: ctrl),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Slider tabs present, Chat AI active by default with mic & receipt scanner buttons
+    expect(find.text('Chat AI'), findsOneWidget);
+    expect(find.text('Manual'), findsOneWidget);
+    expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.document_scanner_rounded), findsOneWidget);
+
+    // Slide to Manual on the right
+    await tester.tap(find.text('Manual'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cari transaksi...'), findsOneWidget);
   });
 }

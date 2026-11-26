@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { pool, runMigrations } from './db/pool.js';
 import authRoutes from './routes/auth.js';
 import financeRoutes from './routes/finance.js';
+import chatRoutes from './routes/chat.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 4200);
@@ -18,7 +19,7 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
 
 app.get('/health', async (_req, res) => {
   try {
@@ -30,6 +31,7 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api', financeRoutes);
 
 app.use((_req, res) => {
