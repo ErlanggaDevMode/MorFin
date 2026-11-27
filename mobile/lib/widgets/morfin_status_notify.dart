@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/theme/morfin_theme.dart';
+import 'morfin_mascot.dart';
 
 OverlayEntry? _activeNotifyEntry;
 
@@ -13,6 +14,7 @@ OverlayEntry? _activeNotifyEntry;
 void showMorfinStatusNotify(
   BuildContext context, {
   required bool isSuccess,
+  MascotMood? mood,
   String? title,
   required String message,
   String? buttonLabel,
@@ -29,6 +31,7 @@ void showMorfinStatusNotify(
   entry = OverlayEntry(
     builder: (ctx) => _MorfinStatusNotifyOverlay(
       isSuccess: isSuccess,
+      mood: mood ?? (isSuccess ? MascotMood.happy : MascotMood.worried),
       title: title ?? (isSuccess ? 'Berhasil!' : 'Gagal!'),
       message: message,
       buttonLabel: buttonLabel ?? (isSuccess ? 'Oke, Sip!' : 'Tutup'),
@@ -48,6 +51,7 @@ void showMorfinStatusNotify(
 
 class _MorfinStatusNotifyOverlay extends StatefulWidget {
   final bool isSuccess;
+  final MascotMood mood;
   final String title;
   final String message;
   final String buttonLabel;
@@ -56,6 +60,7 @@ class _MorfinStatusNotifyOverlay extends StatefulWidget {
 
   const _MorfinStatusNotifyOverlay({
     required this.isSuccess,
+    required this.mood,
     required this.title,
     required this.message,
     required this.buttonLabel,
@@ -151,7 +156,6 @@ class _MorfinStatusNotifyOverlayState extends State<_MorfinStatusNotifyOverlay>
       curve: Curves.easeOutBack,
     );
 
-    final badgeColor = widget.isSuccess ? const Color(0xFF16A84D) : const Color(0xFFE53935);
     final timerColor = MorfinColors.lime;
 
     return Positioned.fill(
@@ -180,7 +184,6 @@ class _MorfinStatusNotifyOverlayState extends State<_MorfinStatusNotifyOverlay>
             child: _buildCard(
               isDesktopOrTablet: isDesktopOrTablet,
               sheetHeight: sheetHeight,
-              badgeColor: badgeColor,
               timerColor: timerColor,
               badgeScale: badgeScale,
             ),
@@ -193,7 +196,6 @@ class _MorfinStatusNotifyOverlayState extends State<_MorfinStatusNotifyOverlay>
   Widget _buildCard({
     required bool isDesktopOrTablet,
     required double sheetHeight,
-    required Color badgeColor,
     required Color timerColor,
     required Animation<double> badgeScale,
   }) {
@@ -263,19 +265,16 @@ class _MorfinStatusNotifyOverlayState extends State<_MorfinStatusNotifyOverlay>
 
             if (!isDesktopOrTablet) const Spacer(flex: 2) else const SizedBox(height: 30),
 
-            // Scalloped Green/Red Badge with crisp neo-brutalist shadow
+            // Animated Fin Mascot celebrating success or sympathizing on error
             ScaleTransition(
               scale: badgeScale,
-              child: CustomPaint(
-                size: const Size(94, 94),
-                painter: _ScallopedStatusBadgePainter(
-                  badgeColor: badgeColor,
-                  isSuccess: widget.isSuccess,
-                ),
+              child: MorfinMascot(
+                mood: widget.mood,
+                size: 102,
               ),
             ),
 
-            const SizedBox(height: 22),
+            const SizedBox(height: 16),
 
             // Title & Message
             Padding(
@@ -319,76 +318,5 @@ class _MorfinStatusNotifyOverlayState extends State<_MorfinStatusNotifyOverlay>
         ),
       ),
     );
-  }
-}
-
-class _ScallopedStatusBadgePainter extends CustomPainter {
-  final Color badgeColor;
-  final bool isSuccess;
-
-  const _ScallopedStatusBadgePainter({
-    required this.badgeColor,
-    required this.isSuccess,
-  });
-
-  Path _buildScallopedPath(Offset center, double outerR, double innerR, int lobes) {
-    final path = Path();
-    final midR = (outerR + innerR) / 2;
-    final amp = (outerR - innerR) / 2;
-    const samples = 140;
-    for (int i = 0; i <= samples; i++) {
-      final t = (i / samples) * math.pi * 2;
-      final r = midR + amp * math.cos(lobes * t);
-      final x = center.dx + r * math.cos(t - math.pi / 2);
-      final y = center.dy + r * math.sin(t - math.pi / 2);
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    path.close();
-    return path;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final outerR = size.width * 0.45;
-    final innerR = size.width * 0.375;
-
-    // 1. Offset crisp dark neo-flat shadow behind the scalloped badge (like reference)
-    final shadowPath = _buildScallopedPath(Offset(cx - 2.5, cy + 3.5), outerR, innerR, 10);
-    canvas.drawPath(shadowPath, Paint()..color = const Color(0xFF141814));
-
-    // 2. Main scalloped seal badge (green for success, red for error)
-    final badgePath = _buildScallopedPath(Offset(cx, cy), outerR, innerR, 10);
-    canvas.drawPath(badgePath, Paint()..color = badgeColor);
-
-    // 3. White icon stroke (checkmark or cross)
-    final iconPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.068
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    if (isSuccess) {
-      final check = Path()
-        ..moveTo(size.width * 0.34, size.height * 0.51)
-        ..lineTo(size.width * 0.46, size.height * 0.62)
-        ..lineTo(size.width * 0.67, size.height * 0.39);
-      canvas.drawPath(check, iconPaint);
-    } else {
-      final d = size.width * 0.145;
-      canvas.drawLine(Offset(cx - d, cy - d), Offset(cx + d, cy + d), iconPaint);
-      canvas.drawLine(Offset(cx + d, cy - d), Offset(cx - d, cy + d), iconPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ScallopedStatusBadgePainter oldDelegate) {
-    return oldDelegate.badgeColor != badgeColor || oldDelegate.isSuccess != isSuccess;
   }
 }

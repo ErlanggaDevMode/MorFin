@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../core/theme/morfin_theme.dart';
-import '../screens/duolingo_splash_screen.dart';
+import 'morfin_mascot.dart';
 
 class MorfinTourStep {
   final GlobalKey targetKey;
@@ -228,12 +228,11 @@ class _MorfinTourOverlayState extends State<MorfinTourOverlay>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        MorfinLogoBox(
-                          size: 62,
-                          boxColor: MorfinColors.lime,
-                          strokeColor: MorfinColors.carbon,
+                        const MorfinMascot(
+                          mood: MascotMood.happy,
+                          size: 96,
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 12),
                         Text(
                           'Selamat Datang di MorFin!',
                           textAlign: TextAlign.center,
@@ -241,7 +240,7 @@ class _MorfinTourOverlayState extends State<MorfinTourOverlay>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Akunmu mulai dari Rp 0 dan siap mencatat keuangan nyata. Mau ikuti tur singkat mengenal fitur utama MorFin?',
+                          'Kenalin, aku Fin — teman hematmu! Akunmu mulai dari Rp 0 dan siap mencatat keuangan nyata. Mau ikuti tur singkat bareng aku?',
                           textAlign: TextAlign.center,
                           style: MorfinTheme.body(13, color: MorfinColors.muted),
                         ),
@@ -323,6 +322,12 @@ class _MorfinTourOverlayState extends State<MorfinTourOverlay>
         children: [
           Row(
             children: [
+              MorfinMascot(
+                mood: isLast ? MascotMood.party : MascotMood.idle,
+                size: 40,
+                showShadow: false,
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                 decoration: BoxDecoration(

@@ -5,7 +5,7 @@ import '../core/theme/morfin_theme.dart';
 import '../models/morfin_models.dart';
 import '../state/morfin_controller.dart';
 import '../widgets/add_sheets.dart';
-import '../widgets/neo_flat_art.dart';
+import '../widgets/morfin_mascot.dart';
 
 class HomeScreen extends StatefulWidget {
   final MorfinController controller;
@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             _buildNotchedBalanceCard(context, controller, balanceText, days, hide),
             const SizedBox(height: 14),
-            _buildBentoCards(budgetRem, summary),
+            _buildBentoCards(budgetRem, summary, dash?.budgets ?? const []),
           ],
         );
         final rightColumn = _buildWeeklyCashflowChart(context, series, summary, hide);
@@ -327,7 +327,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBentoCards(String budgetRem, DashboardSummary? summary) {
+  Widget _buildBentoCards(String budgetRem, DashboardSummary? summary, List<MorfinBudget> budgets) {
+    final hasOverBudget = budgets.any((b) => b.isOverBudget) || (summary?.budgetRemaining ?? 0) < 0;
+    final hasWarningBudget = budgets.any((b) => b.usedPercent >= 80) || (summary?.budgetHealthPercent ?? 100) <= 20;
+    final budgetMood = hasOverBudget
+        ? MascotMood.sad
+        : hasWarningBudget
+            ? MascotMood.worried
+            : (budgets.isNotEmpty && (summary?.budgetHealthPercent ?? 100) >= 65)
+                ? MascotMood.happy
+                : MascotMood.idle;
+    final budgetStatusLabel = hasOverBudget
+        ? 'Boncos'
+        : hasWarningBudget
+            ? 'Was-was'
+            : 'Terkendali';
+
+    final streakDays = summary?.hematStreakDays ?? 0;
+    final streakMood = streakDays >= 3
+        ? MascotMood.party
+        : streakDays >= 1
+            ? MascotMood.happy
+            : MascotMood.idle;
+
     return Row(
       children: [
         Expanded(
@@ -359,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Container(
                     height: 68,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
                       color: MorfinColors.carbon,
                       borderRadius: BorderRadius.circular(14),
@@ -367,21 +389,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          width: 34,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: MorfinColors.gold,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Center(child: Text('Rp', style: MorfinTheme.display(12, color: MorfinColors.onLime))),
+                        MorfinMascot(
+                          mood: budgetMood,
+                          size: 46,
+                          showShadow: false,
                         ),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('${summary?.budgetHealthPercent ?? 100}%', style: MorfinTheme.display(16, color: MorfinColors.lime)),
-                            Text('Terkendali', style: MorfinTheme.body(9.5, color: MorfinColors.mutedLight)),
+                            Text(
+                              '${summary?.budgetHealthPercent ?? 100}%',
+                              style: MorfinTheme.display(
+                                16,
+                                color: hasOverBudget ? MorfinColors.coralSoft : MorfinColors.lime,
+                              ),
+                            ),
+                            Text(
+                              budgetStatusLabel,
+                              style: MorfinTheme.body(
+                                9.5,
+                                color: hasOverBudget ? MorfinColors.coralSoft : MorfinColors.mutedLight,
+                                weight: hasOverBudget ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -410,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${summary?.hematStreakDays ?? 0}', style: MorfinTheme.display(36, color: Colors.white)),
+                        Text('$streakDays', style: MorfinTheme.display(36, color: Colors.white)),
                         const SizedBox(height: 2),
                         Text(
                           'Hari Hemat\nTanpa Boncos',
@@ -419,7 +450,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                  const Positioned(right: -6, bottom: -10, child: FlameStreakArt(size: 80)),
+                  Positioned(
+                    right: 4,
+                    bottom: 2,
+                    child: MorfinMascot(
+                      mood: streakMood,
+                      size: 72,
+                      showShadow: false,
+                    ),
+                  ),
                 ],
               ),
             ),

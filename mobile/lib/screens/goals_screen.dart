@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/morfin_theme.dart';
 import '../state/morfin_controller.dart';
 import '../widgets/add_sheets.dart';
+import '../widgets/morfin_mascot.dart';
 import '../widgets/neo_flat_art.dart';
 
 class GoalsScreen extends StatelessWidget {
@@ -66,14 +67,65 @@ class GoalsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 26),
+              const SizedBox(height: 18),
+              if (goals.isNotEmpty) ...[
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: MorfinColors.carbon,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: MorfinColors.lime.withValues(alpha: 0.28)),
+                    ),
+                    child: Row(
+                      children: [
+                        MorfinMascot(
+                          mood: (summary?.completedGoals ?? 0) > 0 ? MascotMood.party : MascotMood.happy,
+                          size: 62,
+                          showShadow: false,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                (summary?.completedGoals ?? 0) > 0
+                                    ? 'Yeay! Target Tercapai!'
+                                    : 'Fin Dukung Targetmu!',
+                                style: MorfinTheme.display(14.5, color: MorfinColors.lime),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                (summary?.completedGoals ?? 0) > 0
+                                    ? '${summary!.completedGoals} target keuangan berhasil kamu wujudkan. Teruskan kebiasaan hematmu!'
+                                    : 'Sedikit demi sedikit menabung biar tunas keuanganmu makin tinggi.',
+                                style: MorfinTheme.body(11.5, color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               Expanded(
                 child: goals.isEmpty
                     ? Center(
-                        child: Text(
-                          'Belum ada target keuangan.\nTekan tombol + di bawah untuk membuat target pertama.',
-                          textAlign: TextAlign.center,
-                          style: MorfinTheme.body(13, color: MorfinColors.mutedLight),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const MorfinMascot(mood: MascotMood.idle, size: 98, showShadow: false),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Belum ada target keuangan.\nTekan tombol + di bawah untuk membuat target pertama bareng Fin.',
+                              textAlign: TextAlign.center,
+                              style: MorfinTheme.body(13, color: MorfinColors.mutedLight),
+                            ),
+                          ],
                         ),
                       )
                     : GridView.builder(

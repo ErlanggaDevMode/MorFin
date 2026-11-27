@@ -8,6 +8,7 @@ import '../core/theme/morfin_theme.dart';
 import '../models/morfin_models.dart';
 import '../state/morfin_controller.dart';
 import 'add_sheets.dart';
+import 'morfin_mascot.dart';
 import 'morfin_status_notify.dart';
 
 class _ChatBubbleItem {
@@ -55,6 +56,7 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
   bool _sending = false;
   bool _scanning = false;
   bool _isListening = false;
+  bool _justSaved = false;
   bool _speechReady = false;
   bool _voiceSessionDispatched = false;
   String _liveTranscript = '';
@@ -79,7 +81,7 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
         id: 'welcome',
         isUser: false,
         text:
-            'Halo! Aku asisten pencatat MorFin. Kamu bisa langsung:\n'
+            'Halo! Aku Fin, asisten pencatat MorFin. Kamu bisa langsung:\n'
             '• Ketik transaksi biasa (contoh: "Beli kopi 28rb qris")\n'
             '• Tekan ikon Mic untuk rekam suara\n'
             '• Tekan ikon Kamera untuk scan foto struk / nota belanja',
@@ -426,10 +428,15 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
       if (!mounted) return;
       setState(() {
         bubble.savedDraftIndices.add(draftIdx);
+        _justSaved = true;
+      });
+      Future.delayed(const Duration(milliseconds: 3500), () {
+        if (mounted) setState(() => _justSaved = false);
       });
       showMorfinStatusNotify(
         context,
         isSuccess: true,
+        mood: MascotMood.happy,
         title: 'Tersimpan!',
         message:
             '${draft.isIncome ? "Pemasukan" : "Pengeluaran"} "${draft.title}" (${formatIdr(draft.amount)}) berhasil dicatat.',
@@ -458,10 +465,82 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
     }
   }
 
+  MascotMood get _currentMascotMood {
+    if (_isListening) return MascotMood.listening;
+    if (_sending || _scanning) return MascotMood.thinking;
+    if (_justSaved) return MascotMood.happy;
+    return MascotMood.idle;
+  }
+
+  String get _currentMascotStatus {
+    if (_isListening) return 'Fin lagi dengerin suaramu...';
+    if (_scanning) return 'Fin lagi baca foto struk belanja...';
+    if (_sending) return 'Fin lagi analisis catatan transaksimu...';
+    if (_justSaved) return 'Mantap! Transaksimu sudah tercatat rapi!';
+    return 'Fin siap bantu catat lewat chat, suara, atau scan struk';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Live Reactive Fin Companion Strip
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: MorfinColors.surfaceWhite,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: _isListening
+                  ? MorfinColors.coral.withValues(alpha: 0.45)
+                  : MorfinColors.limeDeep.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Row(
+            children: [
+              MorfinMascot(
+                mood: _currentMascotMood,
+                size: 46,
+                showShadow: false,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text('Fin · Asisten MorFin', style: MorfinTheme.display(12.5)),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isListening ? MorfinColors.coral : MorfinColors.limeDeep,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _currentMascotStatus,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: MorfinTheme.body(
+                        11,
+                        color: _isListening ? MorfinColors.coral : MorfinColors.muted,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // Quick suggestion chips
         SizedBox(
           height: 36,
@@ -670,12 +749,8 @@ class _TxChatbotViewState extends State<TxChatbotView> with SingleTickerProvider
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2, color: MorfinColors.carbon),
-            ),
-            const SizedBox(width: 10),
+            const MorfinMascot(mood: MascotMood.thinking, size: 32, showShadow: false),
+            const SizedBox(width: 8),
             Text(label, style: MorfinTheme.body(12, color: MorfinColors.muted, weight: FontWeight.w600)),
           ],
         ),

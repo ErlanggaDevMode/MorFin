@@ -3,7 +3,7 @@ import '../core/theme/morfin_theme.dart';
 import '../models/morfin_models.dart';
 import '../state/morfin_controller.dart';
 import '../widgets/add_sheets.dart';
-import '../widgets/neo_flat_art.dart';
+import '../widgets/morfin_mascot.dart';
 
 class BudgetScreen extends StatelessWidget {
   final MorfinController controller;
@@ -26,6 +26,13 @@ class BudgetScreen extends StatelessWidget {
     final totalOver = totalLimit > 0 && totalSpent > totalLimit;
     final totalUsedPct = totalLimit > 0 ? ((totalSpent / totalLimit) * 100).round() : 0;
     final savedPct = totalLimit > 0 ? (((totalLimit - totalSpent) / totalLimit) * 100).clamp(0, 100).round() : 100;
+    final budgetHeroMood = totalOver
+        ? MascotMood.sad
+        : totalUsedPct >= 80
+            ? MascotMood.worried
+            : items.isNotEmpty
+                ? MascotMood.happy
+                : MascotMood.idle;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -166,7 +173,15 @@ class BudgetScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Positioned(right: 6, bottom: -4, child: TrophyCupArt(size: 102)),
+                    Positioned(
+                      right: 10,
+                      bottom: 4,
+                      child: MorfinMascot(
+                        mood: budgetHeroMood,
+                        size: 88,
+                        showShadow: false,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -176,10 +191,17 @@ class BudgetScreen extends StatelessWidget {
               Expanded(
                 child: items.isEmpty
                     ? Center(
-                        child: Text(
-                          'Belum ada anggaran untuk periode ini.\nTekan tombol + untuk membuat anggaran.',
-                          textAlign: TextAlign.center,
-                          style: MorfinTheme.body(13, color: MorfinColors.muted),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const MorfinMascot(mood: MascotMood.idle, size: 88),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Belum ada anggaran untuk periode ini.\nTekan tombol + untuk membuat anggaran bareng Fin.',
+                              textAlign: TextAlign.center,
+                              style: MorfinTheme.body(13, color: MorfinColors.muted),
+                            ),
+                          ],
                         ),
                       )
                     : isWide

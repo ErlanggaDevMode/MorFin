@@ -120,7 +120,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 450));
 
     // Welcome choice modal visible with Ikuti Tour and Skip Tour
     expect(find.text('Ikuti Tour'), findsOneWidget);
@@ -128,7 +128,8 @@ void main() {
 
     // Start tour -> focuses step 1 with speech bubble
     await tester.tap(find.text('Ikuti Tour'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 450));
 
     expect(find.text('1 / 1'), findsOneWidget);
     expect(find.text('Total Saldo & Privasi'), findsOneWidget);
@@ -136,7 +137,7 @@ void main() {
 
     // Finish tour
     await tester.tap(find.text('Mulai Pakai'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(finished, isTrue);
   });
 
@@ -204,7 +205,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
 
     // Slider tabs present, Chat AI active by default with mic & receipt scanner buttons
     expect(find.text('Chat AI'), findsOneWidget);
@@ -214,7 +215,9 @@ void main() {
 
     // Slide to Manual on the right
     await tester.tap(find.text('Manual'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Cari transaksi...'), findsOneWidget);
   });
 
